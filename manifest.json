@@ -1,0 +1,9 @@
+{
+    "display_name": "RPG Diary & Memory",
+    "loading_order": 116,
+    "js": "index.js",
+    "css": "style.css",
+    "author": "Arkana8",
+    "version": "3.0.0",
+    "homePage": "https://github.com/tavern-rpg-suite/RPG-Diary"
+}

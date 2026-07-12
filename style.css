@@ -1,0 +1,304 @@
+@import url('https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,500;0,700;0,800;1,400;1,500;1,700&family=Caveat:wght@500;600;700&family=PT+Mono&display=swap');
+
+/* ============ floating open button ============ */
+#rpg-diary-btn {
+    position:fixed; right:20px; bottom:276px; width:50px; height:50px; border-radius:50%;
+    display:none; align-items:center; justify-content:center; cursor:pointer; z-index:3000;
+    color:#f3e7cc; font-size:21px;
+    background:linear-gradient(135deg,#5a3f24,#3c2917); border:2px solid #b8902f;
+    box-shadow:0 4px 15px rgba(0,0,0,.5); transition:transform .2s, box-shadow .2s;
+}
+#rpg-diary-btn:hover { transform:scale(1.1); box-shadow:0 6px 20px rgba(184,144,47,.55); }
+.rpg-diary-fab { cursor:pointer; }
+
+/* ============ modal shell ============ */
+/* ============ draggable window (no backdrop — like the other suite panels) ============ */
+#rpg-diary-modal {
+    position:fixed; top:26px; left:50%; transform:translateX(-50%); z-index:10010;
+    display:none; flex-direction:column; align-items:center; background:none; pointer-events:none;
+}
+#rpg-diary-modal.visible { display:flex; }
+/* only the handle and the book graphic catch clicks; empty space passes through to the chat */
+#rpg-diary-root, #rpg-diary-root .rd-fit { pointer-events:none; }
+#rpg-diary-root .rd-book, #rpg-diary-drag { pointer-events:auto; }
+#rpg-diary-drag {
+    display:flex; align-items:center; gap:8px; cursor:move; user-select:none; margin-bottom:8px; min-width:200px; max-width:92vw;
+    padding:6px 8px 6px 12px; border-radius:9px; color:#e9d29a; white-space:nowrap;
+    background:linear-gradient(135deg,#5a3f24,#3c2917); border:1px solid #b8902f;
+    box-shadow:0 6px 16px rgba(0,0,0,.5); font-family:"PT Mono",monospace; font-size:11px; letter-spacing:2px;
+}
+#rpg-diary-drag .rd-grip { opacity:.65; letter-spacing:0; font-size:14px; }
+#rpg-diary-drag .rd-dtitle { flex:1; overflow:hidden; text-overflow:ellipsis; }
+#rpg-diary-drag .rd-x {
+    width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; background:rgba(0,0,0,.25); border:1px solid rgba(230,207,134,.4); color:#e9d29a; font-size:12px;
+}
+#rpg-diary-drag .rd-x:hover { background:#8a2c23; }
+
+/* ============ diary root (design port) ============ */
+#rpg-diary-root {
+    --page:#f1e7cf; --page-2:#e7dabb; --page-edge:#d3c298;
+    --leather:#402c1a; --leather-2:#573c22; --leather-edge:#291a0d;
+    --ink:#3a2c18; --ink-soft:#6a5330; --sepia:#8a6c3c;
+    --gold:#b8902f; --gold-soft:#e6cf86;
+    --oxblood:#8a2c23; --oxblood-deep:#591a15;
+    --navy:#2b4a63; --violet:#5e3a96; --teal:#356b63; --green:#4f7d3a; --amber:#b1802a;
+    font-family:"Alegreya",Georgia,serif; color:var(--ink);
+}
+#rpg-diary-root .rd-fit { display:flex; justify-content:center; width:100%; }
+#rpg-diary-root .rd-book { position:relative; width:722px; transform-origin:top center; perspective:2000px; }
+
+#rpg-diary-root .rd-cover { position:relative; padding:15px; border-radius:10px 16px 16px 10px;
+    background:linear-gradient(135deg,var(--leather-2),var(--leather));
+    box-shadow:0 30px 60px -22px rgba(0,0,0,.75),0 8px 20px rgba(0,0,0,.5),inset 0 0 0 2px rgba(0,0,0,.35),inset 0 0 0 5px rgba(180,144,47,.14); }
+#rpg-diary-root .rd-cover::before { content:""; position:absolute; inset:8px; border:1px dashed rgba(230,207,134,.28); border-radius:8px; pointer-events:none; }
+
+#rpg-diary-root .rd-spread { position:relative; display:flex; transform-style:preserve-3d; border-radius:4px; overflow:visible; }
+#rpg-diary-root .rd-page { position:relative; width:346px; height:466px; overflow:hidden;
+    background:radial-gradient(120% 100% at 50% 0%,#f6eed6,var(--page) 55%,var(--page-2)); }
+#rpg-diary-root .rd-page.left { border-radius:5px 0 0 5px; box-shadow:inset -22px 0 34px -22px rgba(60,40,15,.55); }
+#rpg-diary-root .rd-page.right { border-radius:0 5px 5px 0; box-shadow:inset 22px 0 34px -22px rgba(60,40,15,.55); }
+#rpg-diary-root .rd-page::after { content:""; position:absolute; inset:0; pointer-events:none; mix-blend-mode:multiply;
+    background:repeating-linear-gradient(0deg,transparent 0 26px,rgba(120,90,40,.05) 26px 27px); }
+#rpg-diary-root .rd-spine { position:absolute; left:50%; top:0; bottom:0; width:26px; transform:translateX(-50%); z-index:6; pointer-events:none;
+    background:linear-gradient(90deg,rgba(60,40,15,0),rgba(60,40,15,.32) 45%,rgba(255,250,235,.2) 50%,rgba(60,40,15,.32) 55%,rgba(60,40,15,0)); }
+
+#rpg-diary-root .rd-pad { position:relative; z-index:2; padding:22px 24px; height:100%; display:flex; flex-direction:column; }
+
+/* side tabs */
+#rpg-diary-root .rd-tabs { position:absolute; right:-28px; top:0; bottom:0; display:flex; flex-direction:column; justify-content:center; gap:4px; z-index:1; }
+#rpg-diary-root .rd-tab { width:42px; border:none; cursor:pointer; color:#f3e7cc; border-radius:0 9px 9px 0;
+    writing-mode:vertical-rl; text-orientation:mixed; font-family:"Alegreya",serif; font-weight:700; font-size:11px; letter-spacing:.3px;
+    padding:9px 4px; display:flex; align-items:center; justify-content:center; transform:translateX(-8px);
+    box-shadow:2px 3px 7px rgba(0,0,0,.4),inset 0 0 0 1px rgba(0,0,0,.2); transition:transform .18s,filter .18s; filter:brightness(.86) saturate(.9); }
+#rpg-diary-root .rd-tab:hover { transform:translateX(-3px); filter:brightness(.96); }
+#rpg-diary-root .rd-tab.on { transform:translateX(4px); filter:none; box-shadow:5px 4px 10px rgba(0,0,0,.45); }
+#rpg-diary-root .rd-tab.t0 { background:linear-gradient(180deg,#a2382d,var(--oxblood)); }
+#rpg-diary-root .rd-tab.t1 { background:linear-gradient(180deg,#6f4bab,var(--violet)); }
+#rpg-diary-root .rd-tab.t2 { background:linear-gradient(180deg,#3f7d72,var(--teal)); }
+#rpg-diary-root .rd-tab.t3 { background:linear-gradient(180deg,#c79433,var(--amber)); }
+#rpg-diary-root .rd-tab.t4 { background:linear-gradient(180deg,#356081,var(--navy)); }
+#rpg-diary-root .rd-tab.t5 { background:linear-gradient(180deg,#5c7f45,var(--green)); }
+
+/* nav arrows */
+#rpg-diary-root .rd-nav { position:absolute; left:0; right:0; bottom:-4px; display:flex; align-items:center; justify-content:center; gap:20px; z-index:7; }
+#rpg-diary-root .rd-arrow { width:52px; height:26px; border:none; background:none; cursor:pointer; color:#e6cf86; opacity:.85; transition:.15s; }
+#rpg-diary-root .rd-arrow:hover { opacity:1; transform:scale(1.1); }
+#rpg-diary-root .rd-arrow svg { width:100%; height:100%; filter:drop-shadow(0 2px 3px rgba(0,0,0,.5)); }
+#rpg-diary-root .rd-pagenum { font-family:"PT Mono",monospace; font-size:11px; letter-spacing:2px; color:#d8c294; min-width:120px; text-align:center; }
+
+/* shared content */
+#rpg-diary-root .rd-eyebrow { font-family:"PT Mono",monospace; font-size:9px; letter-spacing:2px; color:var(--sepia); text-transform:uppercase; }
+#rpg-diary-root .rd-htitle { font-family:"Caveat",cursive; font-weight:700; font-size:30px; line-height:.9; color:var(--ink); margin:2px 0 2px; }
+#rpg-diary-root .rd-rule { height:1px; background:repeating-linear-gradient(90deg,var(--page-edge) 0 6px,transparent 6px 11px); margin:9px 0 12px; }
+#rpg-diary-root .rd-clip { position:absolute; width:15px; height:32px; border:3px solid #b3aa94; border-bottom:none; border-radius:8px 8px 0 0; }
+#rpg-diary-root .rd-photo { position:relative; background:#fbf6e8; padding:7px 7px 0; border:1px solid var(--page-edge); border-radius:2px;
+    box-shadow:2px 4px 9px rgba(60,40,15,.3); }
+#rpg-diary-root .rd-photo .rd-pic { height:120px; border-radius:2px; display:grid; place-items:center; color:#7a5c30;
+    background:radial-gradient(130% 120% at 40% 25%,#e9dcbb,#cbb488); overflow:hidden; }
+#rpg-diary-root .rd-photo .rd-pic svg { width:52px; height:52px; opacity:.8; }
+#rpg-diary-root .rd-photo .rd-pic img { width:100%; height:100%; object-fit:cover; }
+#rpg-diary-root .rd-photo .rd-cap { font-family:"Caveat",cursive; font-size:17px; text-align:center; color:var(--ink-soft); padding:5px 0 8px; }
+
+#rpg-diary-root .rd-band { display:inline-block; position:relative; font-weight:800; font-size:15px; padding:0 4px; }
+#rpg-diary-root .rd-band .rd-mk { position:absolute; left:0; bottom:1px; height:52%; width:100%; background:rgba(216,183,40,.5); z-index:-1; border-radius:2px; }
+
+#rpg-diary-root .rd-entry { font-family:"Alegreya",serif; font-size:14.5px; line-height:1.62; color:var(--ink); overflow-y:auto; padding-right:6px; flex:1; }
+#rpg-diary-root .rd-entry::-webkit-scrollbar { width:7px; } #rpg-diary-root .rd-entry::-webkit-scrollbar-thumb { background:var(--oxblood); border-radius:5px; }
+#rpg-diary-root .rd-entry p { margin:0 0 11px; }
+#rpg-diary-root .rd-entry .rd-drop { float:left; font-family:"Caveat",cursive; font-weight:700; font-size:52px; line-height:.72; color:var(--oxblood); margin:4px 9px -2px 0; }
+#rpg-diary-root .rd-genstamp { align-self:flex-start; margin-top:8px; font-family:"PT Mono",monospace; font-size:8px; letter-spacing:1.5px; color:var(--sepia);
+    border:1px solid var(--page-edge); border-radius:4px; padding:3px 7px; opacity:.8; display:flex; align-items:center; gap:5px; }
+#rpg-diary-root .rd-genstamp svg { width:11px; height:11px; }
+
+#rpg-diary-root .rd-meta { font-family:"PT Mono",monospace; font-size:10px; line-height:1.7; color:var(--ink-soft); margin:10px 0 4px; }
+#rpg-diary-root .rd-meta b { color:var(--sepia); font-weight:400; }
+#rpg-diary-root .rd-chips { display:flex; flex-wrap:wrap; gap:6px; margin:10px 0; }
+#rpg-diary-root .rd-chip { font-family:"PT Mono",monospace; font-size:9px; letter-spacing:.5px; padding:3px 8px; border-radius:11px;
+    background:#efe4c8; border:1px solid var(--page-edge); color:var(--ink-soft); }
+#rpg-diary-root .rd-stat { margin:9px 0; }
+#rpg-diary-root .rd-stat .rd-l { display:flex; justify-content:space-between; font-family:"PT Mono",monospace; font-size:9px; letter-spacing:1px; color:var(--sepia); margin-bottom:3px; }
+#rpg-diary-root .rd-stat .rd-bar { height:9px; border-radius:5px; background:#d8c8a0; border:1px solid var(--page-edge); overflow:hidden; }
+#rpg-diary-root .rd-stat .rd-bar i { display:block; height:100%; border-radius:4px; }
+
+/* lists */
+#rpg-diary-root .rd-listcol { flex:1; overflow-y:auto; padding-right:6px; display:flex; flex-direction:column; gap:8px; }
+#rpg-diary-root .rd-listcol::-webkit-scrollbar { width:7px; } #rpg-diary-root .rd-listcol::-webkit-scrollbar-thumb { background:var(--oxblood); border-radius:5px; }
+#rpg-diary-root .rd-lrow { display:flex; align-items:center; gap:10px; background:#fbf6e8; border:1px solid var(--page-edge); border-radius:8px;
+    padding:8px 10px; cursor:pointer; text-align:left; font-family:inherit; color:inherit; transition:.14s; width:100%; }
+#rpg-diary-root .rd-lrow:hover { border-color:var(--gold); transform:translateX(2px); }
+#rpg-diary-root .rd-lrow.sel { border-color:var(--oxblood); box-shadow:0 0 0 1px var(--oxblood); }
+#rpg-diary-root .rd-lrow .rd-av { width:38px; height:38px; flex:none; border-radius:7px; background:radial-gradient(120% 120% at 38% 28%,#e9dcbb,#cbb488);
+    border:1px solid var(--page-edge); display:grid; place-items:center; color:#7a5c30; overflow:hidden; }
+#rpg-diary-root .rd-lrow .rd-av svg { width:20px; height:20px; }
+#rpg-diary-root .rd-lrow .rd-av img { width:100%; height:100%; object-fit:cover; }
+#rpg-diary-root .rd-lrow .rd-nm { font-weight:700; font-size:14px; line-height:1.1; }
+#rpg-diary-root .rd-lrow .rd-sub { font-family:"PT Mono",monospace; font-size:8.5px; letter-spacing:1px; color:var(--sepia); margin-top:2px; }
+
+#rpg-diary-root .rd-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; overflow-y:auto; padding-right:4px; flex:1; align-content:start; }
+#rpg-diary-root .rd-gcell { display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; }
+#rpg-diary-root .rd-gcell .rd-disc { width:56px; height:56px; border-radius:50%; background:radial-gradient(circle at 38% 32%,#f2e7c8,#dcc79a);
+    border:1px solid var(--page-edge); display:grid; place-items:center; color:var(--sepia); transition:.14s; box-shadow:0 2px 4px rgba(60,40,15,.2); }
+#rpg-diary-root .rd-gcell .rd-disc svg { width:26px; height:26px; }
+#rpg-diary-root .rd-gcell.lock .rd-disc { color:#b6a479; background:repeating-linear-gradient(135deg,#eadfc0 0 6px,#e2d5b2 6px 12px); }
+#rpg-diary-root .rd-gcell.sel .rd-disc { border-color:var(--oxblood); box-shadow:0 0 0 2px var(--oxblood); }
+#rpg-diary-root .rd-gcell:hover .rd-disc { transform:translateY(-2px); }
+#rpg-diary-root .rd-gcell .rd-gl { font-family:"Alegreya",serif; font-size:11px; text-align:center; line-height:1.1; color:var(--ink-soft); }
+
+/* header blocks must never be squashed by a growing list/grid below them */
+#rpg-diary-root .rd-eyebrow, #rpg-diary-root .rd-htitle, #rpg-diary-root .rd-rule,
+#rpg-diary-root .rd-author, #rpg-diary-root .rd-acts, #rpg-diary-root .rd-band { flex:none; }
+#rpg-diary-root .rd-grid { padding-top:4px; }
+
+#rpg-diary-root .rd-fade { animation:rd-fade .3s ease; flex:1; min-height:0; overflow-y:auto; padding-right:6px; }
+#rpg-diary-root .rd-fade::-webkit-scrollbar { width:7px; }
+#rpg-diary-root .rd-fade::-webkit-scrollbar-thumb { background:var(--oxblood); border-radius:5px; }
+#rpg-diary-root .rd-fade::-webkit-scrollbar-track { background:transparent; }
+@keyframes rd-fade { from{opacity:0;transform:translateY(6px);} to{opacity:1;transform:none;} }
+#rpg-diary-root .rd-locked { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:var(--sepia); }
+#rpg-diary-root .rd-locked .rd-q { font-family:"Caveat",cursive; font-size:80px; color:var(--gold); opacity:.5; line-height:1; }
+#rpg-diary-root .rd-locked p { font-style:italic; font-size:15px; max-width:210px; }
+
+/* small action buttons on pages */
+#rpg-diary-root .rd-acts { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+#rpg-diary-root .rd-btn { font-family:"PT Mono",monospace; font-size:9.5px; letter-spacing:.5px; cursor:pointer;
+    background:#ece0c6; color:#5a4a33; border:1px solid #c2ac80; border-radius:6px; padding:5px 9px; transition:.14s; }
+#rpg-diary-root .rd-btn:hover { border-color:var(--gold); background:#f3e9d2; }
+#rpg-diary-root .rd-btn.prim { background:linear-gradient(180deg,#a2382d,var(--oxblood)); color:#f3e7cc; border-color:var(--oxblood-deep); }
+#rpg-diary-root .rd-btn.prim:hover { filter:brightness(1.08); }
+#rpg-diary-root .rd-btn.gold { background:linear-gradient(180deg,#d8b455,var(--gold)); color:#3c2917; border-color:#8a6a1e; }
+#rpg-diary-root .rd-btn[disabled] { opacity:.5; cursor:default; }
+#rpg-diary-root .rd-mini { border:none; background:none; color:var(--sepia); cursor:pointer; font-size:12px; padding:2px 4px; opacity:.7; }
+#rpg-diary-root .rd-mini:hover { opacity:1; color:var(--oxblood); }
+
+/* inline editor */
+#rpg-diary-root .rd-edit { display:flex; flex-direction:column; gap:7px; flex:1; overflow-y:auto; padding-right:4px; }
+#rpg-diary-root .rd-edit label { font-family:"PT Mono",monospace; font-size:9px; letter-spacing:1px; color:var(--sepia); text-transform:uppercase; }
+#rpg-diary-root .rd-edit input:not([type="checkbox"]):not([type="radio"]),
+#rpg-diary-root .rd-edit textarea, #rpg-diary-root .rd-edit select {
+    font-family:"Alegreya",serif; font-size:13px; color:var(--ink); background:#fbf6e8; border:1px solid var(--page-edge);
+    border-radius:6px; padding:6px 8px; width:100%; }
+#rpg-diary-root .rd-edit input[type="checkbox"], #rpg-diary-root .rd-edit input[type="radio"] {
+    width:16px; height:16px; flex:none; margin:2px 0 0; padding:0; accent-color:var(--oxblood); cursor:pointer; }
+#rpg-diary-root .rd-edit textarea { resize:vertical; min-height:70px; line-height:1.5; }
+#rpg-diary-root .rd-note { font-family:"Alegreya",serif; font-size:14px; line-height:1.6; color:var(--ink); background:#fbf6e8;
+    border:1px solid var(--page-edge); border-radius:8px; padding:10px 12px; width:100%; flex:1; resize:none; }
+#rpg-diary-root .rd-merge-row {
+    display:flex; gap:9px; align-items:flex-start; background:#fbf6e8; border:1px solid var(--page-edge);
+    border-radius:7px; padding:8px 10px; cursor:pointer;
+    font-family:"Alegreya",serif; font-size:13px; line-height:1.4; letter-spacing:0;
+    text-transform:none; color:var(--ink); }
+#rpg-diary-root .rd-merge-row:hover { border-color:var(--gold); }
+#rpg-diary-root .rd-merge-row .rd-mbody { flex:1; min-width:0; }
+#rpg-diary-root .rd-merge-row .rd-mtitle { font-weight:700; font-size:14px; color:var(--oxblood); }
+#rpg-diary-root .rd-merge-row .rd-mmeta { font-family:"PT Mono",monospace; font-size:9px; letter-spacing:1px; color:var(--sepia); margin:2px 0 3px; }
+#rpg-diary-root .rd-merge-row .rd-mprev {
+    font-size:12.5px; color:var(--ink-soft);
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+#rpg-diary-root .rd-merge-row .rd-macts { display:flex; gap:2px; flex:none; }
+
+#rpg-diary-root .rd-busy { position:absolute; inset:0; z-index:15; display:flex; align-items:center; justify-content:center;
+    background:rgba(241,231,207,.6); font-family:"Caveat",cursive; font-size:24px; color:var(--oxblood); border-radius:5px; }
+#rpg-diary-root .rd-empty { flex:1; display:flex; align-items:center; justify-content:center; text-align:center; color:var(--sepia); font-style:italic; font-size:14px; padding:0 20px; }
+
+/* feed */
+#rpg-diary-root .rd-feed { flex:1; overflow-y:auto; padding-right:6px; display:flex; flex-direction:column; gap:9px; }
+#rpg-diary-root .rd-feed::-webkit-scrollbar { width:7px; } #rpg-diary-root .rd-feed::-webkit-scrollbar-thumb { background:var(--oxblood); border-radius:5px; }
+#rpg-diary-root .rd-frow { position:relative; text-align:left; background:#fbf6e8; border:1px solid var(--page-edge); border-radius:8px;
+    padding:9px 11px; cursor:pointer; font-family:inherit; color:inherit; transition:.14s; box-shadow:0 1px 2px rgba(60,40,15,.12); width:100%; }
+#rpg-diary-root .rd-frow:hover { border-color:var(--gold); transform:translateX(2px); }
+#rpg-diary-root .rd-frow.sel { border-color:var(--oxblood); box-shadow:0 0 0 1px var(--oxblood); }
+#rpg-diary-root .rd-frow.sel::before { content:""; position:absolute; left:-1px; top:8px; bottom:8px; width:4px; border-radius:0 3px 3px 0; background:var(--oxblood); }
+#rpg-diary-root .rd-frow .rd-fdate { font-family:"PT Mono",monospace; font-size:9px; letter-spacing:1px; color:var(--oxblood); }
+#rpg-diary-root .rd-frow .rd-fprev { font-family:"Alegreya",serif; font-size:13px; line-height:1.4; color:var(--ink-soft); margin:4px 0 6px;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+#rpg-diary-root .rd-frow .rd-fchips { display:flex; align-items:center; gap:6px; }
+#rpg-diary-root .rd-frow .rd-floc { margin-left:auto; color:var(--sepia); }
+#rpg-diary-root .rd-frow .rd-floc svg { width:15px; height:15px; }
+
+/* front cover + open animation */
+#rpg-diary-root .rd-front { position:absolute; inset:0; z-index:20; border-radius:10px 16px 16px 10px; cursor:pointer;
+    transform-origin:left center; backface-visibility:hidden;
+    background:linear-gradient(135deg,#5a3f24,#3c2917 60%,#2c1d0f);
+    box-shadow:0 30px 60px -20px rgba(0,0,0,.8),inset 0 0 0 2px rgba(0,0,0,.4),inset 0 0 0 6px rgba(180,144,47,.16),inset 0 2px 8px rgba(255,220,150,.08);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; overflow:hidden;
+    transition:transform 1s cubic-bezier(.65,0,.25,1),opacity .5s ease .45s; }
+#rpg-diary-root .rd-front::before { content:""; position:absolute; inset:12px; border:1px dashed rgba(230,207,134,.3); border-radius:9px; pointer-events:none; }
+#rpg-diary-root .rd-fc-corner { position:absolute; width:26px; height:26px; border:2px solid rgba(230,207,134,.4); }
+#rpg-diary-root .rd-fc-corner.tl { top:18px; left:18px; border-right:none; border-bottom:none; border-radius:6px 0 0 0; }
+#rpg-diary-root .rd-fc-corner.tr { top:18px; right:18px; border-left:none; border-bottom:none; border-radius:0 6px 0 0; }
+#rpg-diary-root .rd-fc-corner.bl { bottom:18px; left:18px; border-right:none; border-top:none; border-radius:0 0 0 6px; }
+#rpg-diary-root .rd-fc-corner.br { bottom:18px; right:18px; border-left:none; border-top:none; border-radius:0 0 6px 0; }
+#rpg-diary-root .rd-fc-ribbon { position:absolute; top:-2px; right:64px; width:20px; height:120px; background:linear-gradient(180deg,#8a2c23,#5e1a14);
+    clip-path:polygon(0 0,100% 0,100% 100%,50% 84%,0 100%); box-shadow:2px 0 5px rgba(0,0,0,.4); }
+#rpg-diary-root .rd-fc-emblem { width:96px; height:96px; border-radius:50%; display:grid; place-items:center; margin-bottom:6px;
+    background:radial-gradient(circle at 38% 32%,#e6cf86,#b8902f 62%,#8a6a1e); color:#3c2917;
+    box-shadow:0 0 0 4px rgba(60,40,15,.5),0 0 0 6px rgba(230,207,134,.35),0 6px 14px rgba(0,0,0,.5); }
+#rpg-diary-root .rd-fc-emblem svg { width:52px; height:52px; }
+#rpg-diary-root .rd-fc-title { font-family:"Caveat",cursive; font-weight:700; font-size:52px; line-height:.9; color:#e9d29a; text-shadow:0 2px 4px rgba(0,0,0,.5); }
+#rpg-diary-root .rd-fc-sub { font-family:"PT Mono",monospace; font-size:9px; letter-spacing:3px; color:#b79a5e; }
+#rpg-diary-root .rd-fc-strap { position:absolute; top:0; bottom:0; right:34px; width:34px; background:linear-gradient(90deg,#4a3218,#5a3f24);
+    box-shadow:-3px 0 6px rgba(0,0,0,.4),inset 0 0 0 1px rgba(0,0,0,.35); display:grid; place-items:center; }
+#rpg-diary-root .rd-fc-strap .rd-buckle { width:20px; height:26px; border-radius:4px; background:linear-gradient(180deg,#d8be78,#9a7a26); box-shadow:0 2px 4px rgba(0,0,0,.5),inset 0 0 0 1px #6f5416; }
+#rpg-diary-root .rd-fc-hint { position:absolute; bottom:26px; font-family:"PT Mono",monospace; font-size:10px; letter-spacing:2px; color:#c7ab6d; animation:rd-hint 1.8s ease-in-out infinite; }
+@keyframes rd-hint { 0%,100%{opacity:.5;} 50%{opacity:1;} }
+
+#rpg-diary-root .rd-book.closed .rd-tabs, #rpg-diary-root .rd-book.closed .rd-nav { opacity:0; pointer-events:none; }
+#rpg-diary-root .rd-tabs, #rpg-diary-root .rd-nav { transition:opacity .5s ease .5s; }
+#rpg-diary-root .rd-book.open .rd-front { transform:rotateY(-118deg); opacity:0; pointer-events:none; box-shadow:0 30px 60px -20px rgba(0,0,0,.9); }
+#rpg-diary-root .rd-book.closed .rd-spread { filter:brightness(.94) saturate(.95); }
+#rpg-diary-root .rd-spread { transition:filter .6s ease; }
+
+#rpg-diary-root .rd-author { display:flex; align-items:center; gap:7px; font-family:"PT Mono",monospace; font-size:9px; letter-spacing:1px; color:var(--sepia); margin-bottom:6px; }
+#rpg-diary-root .rd-author .rd-aav { width:20px; height:20px; border-radius:50%; background:radial-gradient(circle at 38% 30%,#e9dcbb,#cbb488); border:1px solid var(--page-edge); display:grid; place-items:center; color:#7a5c30; overflow:hidden; }
+#rpg-diary-root .rd-author .rd-aav svg { width:12px; height:12px; }
+#rpg-diary-root .rd-author .rd-aav img { width:100%; height:100%; object-fit:cover; }
+#rpg-diary-root .rd-author b { color:var(--oxblood); font-weight:700; }
+
+@media (prefers-reduced-motion:reduce) { #rpg-diary-root * { transition:none!important; animation:none!important; } }
+
+/* settings block */
+.rpg-diary-settings .rd-set-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap; }
+.rpg-diary-settings label.checkbox_label { display:flex; align-items:center; gap:7px; margin:5px 0; }
+
+/* live search box */
+#rpg-diary-root .rd-search {
+    width:100%; margin:2px 0 0; padding:6px 9px; border-radius:7px; flex:none;
+    font-family:"Alegreya",serif; font-size:13px; color:var(--ink);
+    background:#fbf6e8; border:1px solid var(--page-edge); }
+#rpg-diary-root .rd-search:focus { outline:none; border-color:var(--gold); }
+#rpg-diary-root .rd-search::placeholder { color:var(--sepia); opacity:.8; }
+
+/* relationship drift sparkline */
+#rpg-diary-root .rd-spark { margin:8px 0 4px; }
+#rpg-diary-root .rd-spark .rd-l { display:flex; justify-content:space-between; font-family:"PT Mono",monospace;
+    font-size:9px; letter-spacing:1px; color:var(--sepia); margin-bottom:3px; }
+#rpg-diary-root .rd-spark svg { width:100%; height:34px; background:#f3e9d2; border:1px solid var(--page-edge); border-radius:6px; }
+#rpg-diary-root .rd-warn { margin-top:5px; font-size:11.5px; line-height:1.4; color:var(--oxblood);
+    background:#f7e4dd; border:1px solid #d8a99c; border-radius:6px; padding:5px 7px; }
+
+/* continuity conflicts */
+#rpg-diary-root .rd-conflict { background:#fbf6e8; border:1px solid var(--page-edge); border-left:4px solid var(--sepia);
+    border-radius:6px; padding:8px 10px; font-family:"Alegreya",serif; text-transform:none; letter-spacing:0; }
+#rpg-diary-root .rd-conflict.high { border-left-color:var(--oxblood); background:#f7e4dd; }
+#rpg-diary-root .rd-conflict .rd-cf-f { font-size:13px; font-weight:700; color:var(--ink); }
+#rpg-diary-root .rd-conflict .rd-cf-s { font-size:12.5px; color:var(--oxblood); margin-top:3px; }
+
+/* main-character bond block on the Diary tab */
+#rpg-diary-root .rd-bond { flex:none; margin:2px 0 4px; }
+#rpg-diary-root .rd-bond-s { font-family:"Alegreya",serif; font-size:12.5px; font-style:italic; color:var(--ink-soft); margin-top:3px; }
+
+/* Bonds tab */
+#rpg-diary-root .rd-tab.t6 { background:linear-gradient(180deg,#a2568c,#7d3a68); }
+#rpg-diary-root .rd-bmini { margin-top:4px; }
+#rpg-diary-root .rd-bmini .rd-bar { height:7px; }
+#rpg-diary-root .rd-bpct { font-family:"PT Mono",monospace; font-size:10px; color:var(--sepia); flex:none; }
+/* 7 tabs now — tighten them so they all fit the page height */
+#rpg-diary-root .rd-tab { padding:7px 4px; font-size:10.5px; }
+
+/* Memory tab */
+#rpg-diary-root .rd-tab.t7 { background:linear-gradient(180deg,#7a6a3a,#5c4f26); }
+
+/* locked-memory draft card */
+#rpg-diary-root .rd-draft { flex:none; margin-top:8px; background:#f3e9d2; border:1px dashed var(--gold); border-radius:8px; padding:8px 10px; }
+#rpg-diary-root .rd-draft-t { font-family:"Alegreya",serif; font-size:12.5px; line-height:1.45; color:var(--ink-soft); margin:4px 0 2px; }
