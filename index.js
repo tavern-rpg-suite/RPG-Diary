@@ -70,6 +70,7 @@ const I18N = {
         search_ph: 'Search entries, events, people…', pin: 'Pin', pinned: 'Pinned', pin_hint: 'Pinned facts are ALWAYS sent to the AI, no matter what the scene is about.',
         pin_on: 'Pinned — the AI will always remember this.', pin_off: 'Unpinned — back to normal retrieval.',
         cont_btn: '⇥ Continue from…', cont_title: 'Continue from another chat', cont_hint: "Pull a saved memory into THIS chat only. Your other chats and their diaries stay untouched.",
+        cont_unsummarized: 'diary only (never summarized)', cont_diary_only: '{e} entries · {v} events · {n} NPCs — pull the diary, notes and dossier across',
         cont_stats: '({e} events · {n} NPCs · {g} gifts)', cont_do: '⇥ Use this memory here', cont_pick: 'Pick a memory first.', cont_done: 'Memory attached to this chat.', same_char: 'same character',
         set_carrymode: 'Auto-carry memory into new chats:', carry_char: 'Only chats with the SAME character', carry_all: 'Any new chat', carry_off: 'Never (manual only)',
         merge_btn: '⚯ Merge', merge_title: 'Merge memories', merge_hint: 'Pick two or more summaries to fuse into one unified memory (they can be from different chats).',
@@ -121,7 +122,8 @@ const I18N = {
         set_auto_h: 'Automation', set_autoentry: 'Auto-write a diary entry every N game-days', set_autodays: 'Game-days between entries:',
         set_output_lang: 'AI writes in:', lang_follow: 'Same as UI', lang_en: 'English', lang_ru: 'Russian',
         set_embed_h: 'Vector RAG (optional — needs an embeddings endpoint)', set_useembed: 'Use vector embeddings for retrieval (falls back to keyword RAG)',
-        set_embed_url_ph: 'blank = use the API URL above', set_embed_note: 'Leave off if your provider has no /embeddings endpoint.'
+        set_embed_url_ph: 'blank = use the API URL above', set_embed_note: 'OpenRouter supports embeddings — leave URL/key blank to reuse the API above, and prefix the model with its provider (e.g. openai/text-embedding-3-small).',
+        embed_test: 'Test embeddings', embed_ok: 'Embeddings work — {model} ({dim} dimensions).', embed_fail: 'Embeddings failed: {err}'
     },
     ru: {
         btn_open: 'Дневник', close: 'Закрыть',
@@ -164,6 +166,7 @@ const I18N = {
         search_ph: 'Поиск по записям, событиям, людям…', pin: 'Закрепить', pinned: 'Закреплено', pin_hint: 'Закреплённые факты ВСЕГДА уходят ИИ, о чём бы ни была сцена.',
         pin_on: 'Закреплено — ИИ будет помнить это всегда.', pin_off: 'Откреплено — обычный подбор.',
         cont_btn: '⇥ Продолжить из…', cont_title: 'Продолжить из другого чата', cont_hint: 'Подтянуть сохранённую память ТОЛЬКО в этот чат. Другие чаты и их дневники не тронутся.',
+        cont_unsummarized: 'только дневник (не суммировался)', cont_diary_only: 'записей: {e} · событий: {v} · НПС: {n} — перенести дневник, заметки и досье',
         cont_stats: '(событий: {e} · НПС: {n} · даров: {g})', cont_do: '⇥ Использовать здесь', cont_pick: 'Сначала выбери память.', cont_done: 'Память привязана к этому чату.', same_char: 'тот же персонаж',
         set_carrymode: 'Авто-перенос памяти в новые чаты:', carry_char: 'Только чаты с ТЕМ ЖЕ персонажем', carry_all: 'В любой новый чат', carry_off: 'Никогда (только вручную)',
         merge_btn: '⚯ Объединить', merge_title: 'Объединить память', merge_hint: 'Выбери два и более саммари, чтобы слить их в одну цельную память (можно из разных чатов).',
@@ -211,7 +214,8 @@ const I18N = {
         set_auto_h: 'Автоматизация', set_autoentry: 'Авто-запись в дневник каждые N игровых дней', set_autodays: 'Игровых дней между записями:',
         set_output_lang: 'ИИ пишет на:', lang_follow: 'Как интерфейс', lang_en: 'Английском', lang_ru: 'Русском',
         set_embed_h: 'Векторный RAG (опционально — нужен эмбеддинг-эндпоинт)', set_useembed: 'Использовать векторные эмбеддинги для поиска (иначе — поиск по словам)',
-        set_embed_url_ph: 'пусто = взять URL API выше', set_embed_note: 'Не включай, если у провайдера нет /embeddings.'
+        set_embed_url_ph: 'пусто = взять URL API выше', set_embed_note: 'OpenRouter поддерживает эмбеддинги — оставь URL/ключ пустыми, чтобы взять API выше, и указывай модель с префиксом провайдера (например openai/text-embedding-3-small).',
+        embed_test: 'Проверить эмбеддинги', embed_ok: 'Эмбеддинги работают — {model} ({dim} измерений).', embed_fail: 'Эмбеддинги не работают: {err}'
     }
 };
 function t(key, vars) {
@@ -235,7 +239,6 @@ const defaultSettings = {
     model: 'google/gemma-4-31b-it',
     temperature: 0.7,
     outputLang: 'follow',
-    hideButton: false,
     injectMemory: true,
     injectSummary: true,        // the summary text block specifically (separate from RAG/diary)
     lockNewMemory: false,      // new chats start with the memory text locked
@@ -268,7 +271,7 @@ const defaultSettings = {
     useEmbeddings: false,
     embedUrl: '',
     embedKey: '',
-    embedModel: 'text-embedding-3-small',
+    embedModel: 'openai/text-embedding-3-small',
     summaryLibrary: [],
     chatStates: {}
 };
@@ -431,15 +434,32 @@ let lastQueryVec = null, embedBusy = false, embedTimer = null, embedWorking = fa
 function vecKey(c) { return 'h' + hashText(String(c.text || '') + '|' + String(c.extra || '')); }
 function hashText(s) { let h = 0; s = String(s || ''); for (let i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) | 0; } return h; }
 function embedConfigured() { return settings.useEmbeddings && !!(settings.embedUrl || settings.baseUrl) && !!(settings.embedKey || settings.apiKey); }
+async function testEmbeddings() {
+    const btn = document.getElementById('rpgd-embtest');
+    if (btn) { btn.disabled = true; btn.textContent = '…'; }
+    try {
+        const v = await embed(['test']);
+        const dim = (v && v[0] && v[0].length) || 0;
+        if (!dim) throw new Error('empty');
+        toastr.success(t('embed_ok', { model: settings.embedModel, dim }));
+    } catch (e) {
+        toastr.error(t('embed_fail', { err: String(e.message || e) }), '', { timeOut: 12000 });
+    }
+    if (btn) { btn.disabled = false; btn.textContent = t('embed_test'); }
+}
 async function embed(texts) {
     const url = ((settings.embedUrl || settings.baseUrl) || '').replace(/\/$/, '') + '/embeddings';
     const key = (settings.embedKey || settings.apiKey || '').trim();
     const res = await fetch(url, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: settings.embedModel || 'text-embedding-3-small', input: texts })
+        body: JSON.stringify({ model: settings.embedModel || 'openai/text-embedding-3-small', input: texts, encoding_format: 'float' })
     });
-    if (!res.ok) throw new Error('embed HTTP ' + res.status);
+    if (!res.ok) {
+        let detail = '';
+        try { const j = await res.json(); detail = (j.error && (j.error.message || j.error)) || ''; } catch (_) { }
+        throw new Error('HTTP ' + res.status + (detail ? ' — ' + detail : ''));
+    }
     const data = await res.json();
     return (data.data || []).map(d => d.embedding);
 }
@@ -1045,6 +1065,7 @@ function snapshotDossier() {
     const strip = (o) => { const c = Object.assign({}, o); delete c.portrait; return c; };
     return {
         bond: state.bond ? JSON.parse(JSON.stringify(state.bond)) : null,
+        notes: state.notes || '',
         entries: state.entries.map(strip),
         events: state.events.map(strip),
         npcs: state.npcs.map(strip),
@@ -1061,6 +1082,7 @@ function snapshotFromChat(chatId) {
     const strip = (o) => { const c = Object.assign({}, o); delete c.portrait; return c; };
     return {
         bond: src.bond ? JSON.parse(JSON.stringify(src.bond)) : null,
+        notes: src.notes || '',
         entries: (src.entries || []).map(strip),
         events: (src.events || []).map(strip),
         npcs: (src.npcs || []).map(strip),
@@ -1355,14 +1377,6 @@ function bondR() {
         ${b.kind === 'npc' ? `<div class="rd-acts"><button class="rd-btn rpg-d-edit" data-type="npc" data-id="${b.id}">${t('act_edit')}</button></div>` : ''}
     </div>`;
 }
-function bondRow() {
-    const b = state.bond;
-    if (!b || typeof b.trust !== 'number') return '';
-    const fake = { trust: b.trust, trustHistory: b.history || [] };
-    return `<div class="rd-bond">${statRow(t('bond_label', { name: authorName() }), b.trust, 'linear-gradient(90deg,#8a2c23,#c1663a)')}
-        ${b.status ? `<div class="rd-bond-s">${escapeHtml(b.status)}</div>` : ''}
-        ${sparkline(fake)}</div>`;
-}
 function feedL() {
     const es = state.entries.filter(e => matchQ(e.text, e.date, e.loc, e.mood, (e.tags || []).join(' ')));
     const head = `<div class="rd-author"><span class="rd-aav">${I(G.user)}</span> ${t('kept_by')} <b>${escapeHtml(authorName())}</b> <button class="rd-mini rpg-d-editauthor" title="${escapeHtml(t('f_author'))}">✎</button></div>
@@ -1557,8 +1571,28 @@ function deleteLib(id) {
     saveSettings(); renderPanel();
     toastr.success(t('lib_deleted'));
 }
+function carrySources() {
+    const lib = (Array.isArray(settings.summaryLibrary) ? settings.summaryLibrary : []).map(x => Object.assign({ src: 'lib' }, x));
+    const here = chatKey();
+    const seen = new Set(lib.map(x => x.srcChat).filter(Boolean));
+    // any other chat that has a diary of its own but never made it into the library
+    for (const key in (settings.chatStates || {})) {
+        if (key === here || seen.has(key)) continue;
+        const st = settings.chatStates[key];
+        if (!st) continue;
+        const size = (st.entries || []).length + (st.events || []).length + (st.npcs || []).length + ((st.notes || '').trim() ? 1 : 0);
+        if (!size) continue;
+        lib.push({
+            src: 'chat', id: 'chat:' + key, srcChat: key, ts: (st.meta && st.meta.created) || 0,
+            title: (st.author || '') + (st.author ? ' · ' : '') + t('cont_unsummarized'),
+            char: st.author || '', chat: key,
+            text: (st.summary || '').trim() || t('cont_diary_only', { e: (st.entries || []).length, v: (st.events || []).length, n: (st.npcs || []).length })
+        });
+    }
+    return lib;
+}
 function continueForm() {
-    const lib = Array.isArray(settings.summaryLibrary) ? settings.summaryLibrary : [];
+    const lib = carrySources();
     const rows = lib.length ? lib.map(s => libRow(s, 'radio')).join('')
         : `<div class="rd-empty" style="flex:none;padding:14px">${t('no_library')}</div>`;
     return `<div class="rd-htitle">${t('cont_title')}</div><div class="rd-rule"></div>
@@ -1590,6 +1624,11 @@ function applyDossierData(d) {
     if (Array.isArray(d.gifts)) mergeGifts(d.gifts.map(g => ({ dir: g.dir === '←' ? 'in' : 'out', item: g.item, who: g.who, when: g.when, why: g.why })));
     if (Array.isArray(d.glossary)) mergeGlossary(d.glossary.map(g => ({ term: g.term, def: g.def })));
     if (d.bond && typeof d.bond === 'object' && !state.bond) state.bond = JSON.parse(JSON.stringify(d.bond));
+    if (d.notes && String(d.notes).trim()) {                     // personal notes follow the diary
+        const cur = (state.notes || '').trim(), inc = String(d.notes).trim();
+        if (!cur) state.notes = inc;
+        else if (!norm(cur).includes(norm(inc))) state.notes = cur + '\n\n— — —\n' + inc;
+    }
     if (settings.carryEntries !== false && Array.isArray(d.entries)) {
         for (const e of d.entries) {
             if (!e || !e.text) continue;
@@ -1606,10 +1645,13 @@ function applyContinue() {
     const root = document.getElementById('rpg-diary-root');
     const pick = root.querySelector('.rpg-d-cchk:checked');
     if (!pick) { toastr.info(t('cont_pick')); return; }
-    const lib = Array.isArray(settings.summaryLibrary) ? settings.summaryLibrary : [];
-    const item = lib.find(s => s.id === pick.dataset.id);
+    const item = carrySources().find(s => s.id === pick.dataset.id);
     if (!item) return;
-    state.summary = String(item.text || '').trim();
+    if (item.src === 'chat') {
+        const src = settings.chatStates[item.srcChat];
+        if (src && (src.summary || '').trim()) state.summary = String(src.summary).trim();
+    }
+    if (item.src !== 'chat') state.summary = String(item.text || '').trim();
     if (item.dossier) state.carriedDossier = String(item.dossier);
     state.archiveScenes = (settings.carryScenes && Array.isArray(item.scenes)) ? item.scenes : [];
     applyDossierData(item.data || snapshotFromChat(item.srcChat));   // fall back to the source chat for older memories
@@ -1863,33 +1905,25 @@ function toggleModal() {
     if (m && m.classList.contains('visible')) closeModal(); else openModal();
 }
 function ensureButton() {
-    // floating book button (can be hidden — then use the wand menu)
+    // remove the wand-menu entry an earlier version added
+    const menuItem = document.getElementById('rpg-diary-menu');
+    if (menuItem) menuItem.remove();
+
     let btn = document.getElementById('rpg-diary-btn');
     if (!btn) {
         btn = document.createElement('div');
         btn.id = 'rpg-diary-btn';
         btn.className = 'rpg-floating-btn';
         btn.innerHTML = '<i class="fa-solid fa-book"></i>';
-        btn.onclick = toggleModal;               // click again to hide
         document.body.appendChild(btn);
     }
     btn.title = t('btn_open');
-    btn.style.display = (settings.enabled && !settings.hideButton) ? 'flex' : 'none';
-
-    // wand (extensions) menu entry — always available, also a toggle
-    const menu = document.getElementById('extensionsMenu');
-    if (menu && !document.getElementById('rpg-diary-menu')) {
-        const it = document.createElement('div');
-        it.id = 'rpg-diary-menu';
-        it.className = 'list-group-item flex-container flexGap5 interactable';
-        it.tabIndex = 0;
-        it.innerHTML = `<div class="fa-solid fa-book extensionsMenuExtensionButton"></div><span>${escapeHtml(t('btn_open'))}</span>`;
-        it.onclick = toggleModal;
-        menu.appendChild(it);
-    }
-    const mi = document.getElementById('rpg-diary-menu');
-    if (mi) mi.style.display = settings.enabled ? '' : 'none';
+    btn.onclick = toggleModal;                       // click again to close
+    // Only inside a chat: on SillyTavern's home screen (no chat open) there is nothing to keep a diary for.
+    const inChat = !!chatKey();
+    btn.style.display = (settings.enabled && inChat) ? 'flex' : 'none';
 }
+
 function ensureModal() {
     if (document.getElementById('rpg-diary-modal')) return;
     const m = document.createElement('div');
@@ -2050,7 +2084,6 @@ function settingsHtml() {
             <div class="inline-drawer-toggle inline-drawer-header"><b>${escapeHtml(t('set_title'))}</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
             <div class="inline-drawer-content">
                 <label class="checkbox_label"><input type="checkbox" id="rpgd-enable"> ${escapeHtml(t('set_enable'))}</label>
-                <label class="checkbox_label"><input type="checkbox" id="rpgd-hidebtn"> ${escapeHtml(t('set_hidebtn'))}</label>
                 <div class="rd-set-row"><label>${escapeHtml(t('set_lang'))}</label>
                     <select id="rpgd-lang" class="text_pole widthNatural">${opt('en', settings.language, 'English')}${opt('ru', settings.language, 'Русский')}</select>
                     <label style="margin-left:10px">${escapeHtml(t('set_output_lang'))}</label>
@@ -2100,6 +2133,7 @@ function settingsHtml() {
                 <div class="rd-set-row"><label style="min-width:70px">${escapeHtml(t('set_url'))}</label><input id="rpgd-emburl" class="text_pole" style="flex:1" type="text" placeholder="${escapeHtml(t('set_embed_url_ph'))}"></div>
                 <div class="rd-set-row"><label style="min-width:70px">${escapeHtml(t('set_key'))}</label><input id="rpgd-embkey" class="text_pole" style="flex:1" type="password" placeholder="${escapeHtml(t('set_embed_url_ph'))}"></div>
                 <div class="rd-set-row"><label style="min-width:70px">${escapeHtml(t('set_model'))}</label><input id="rpgd-embmodel" class="text_pole" style="flex:1" type="text"></div>
+                <div class="rd-set-row"><button id="rpgd-embtest" class="menu_button">${escapeHtml(t('embed_test'))}</button></div>
                 <div class="rd-set-row" style="font-size:11px;opacity:.75">${escapeHtml(t('set_embed_note'))}</div>
                 <hr><b>${escapeHtml(t('set_scene_h'))}</b>
                 <label class="checkbox_label"><input type="checkbox" id="rpgd-scenesearch"> ${escapeHtml(t('set_scenesearch'))}</label>
@@ -2118,7 +2152,7 @@ function bindSettings() {
         else if (kind === 'int') { el.value = settings[key]; el.onchange = () => { settings[key] = parseInt(el.value) || 0; saveSettings(); postSettingChange(); }; }
         else { el.value = settings[key] || ''; el.onchange = () => { settings[key] = el.value; saveSettings(); postSettingChange(); }; }
     };
-    set('rpgd-enable', 'enabled', 'check'); set('rpgd-hidebtn', 'hideButton', 'check');
+    set('rpgd-enable', 'enabled', 'check');
     const exBtn = document.getElementById('rpgd-export'); if (exBtn) exBtn.onclick = exportDiary;
     const imBtn = document.getElementById('rpgd-import'); if (imBtn) imBtn.onclick = importDiary;
     const exAll = document.getElementById('rpgd-exportall'); if (exAll) exAll.onclick = exportAll;
@@ -2134,12 +2168,12 @@ function bindSettings() {
     set('rpgd-autosum', 'autoSummarize', 'check'); set('rpgd-autoevery', 'autoEvery', 'int'); set('rpgd-librarymode', 'libraryMode', 'str'); set('rpgd-locknew', 'lockNewMemory', 'check');
     set('rpgd-carrymode', 'carryMode', 'str'); set('rpgd-carrydossier', 'carryDossier', 'check'); set('rpgd-carryscenes', 'carryScenes', 'check'); set('rpgd-carryentries', 'carryEntries', 'check');
     set('rpgd-ragdossiers', 'ragDossiers', 'check'); set('rpgd-incremental', 'incremental', 'check');
+    const et = document.getElementById('rpgd-embtest'); if (et) et.onclick = testEmbeddings;
     set('rpgd-scenesearch', 'sceneSearch', 'check'); set('rpgd-scenemax', 'sceneMax', 'int'); set('rpgd-sceneskip', 'sceneSkipTail', 'int');
     set('rpgd-useembed', 'useEmbeddings', 'check'); set('rpgd-emburl', 'embedUrl', 'str'); set('rpgd-embkey', 'embedKey', 'str'); set('rpgd-embmodel', 'embedModel', 'str');
 }
 function postSettingChange() {
     ensureButton();
-    const btn = document.getElementById('rpg-diary-btn'); if (btn) btn.title = t('btn_open');
     buildInjection();
     scheduleEmbed();
 }
@@ -2147,6 +2181,7 @@ function postSettingChange() {
 /* ============================================================ EVENTS + INIT */
 function onChatChanged() {
     loadState();
+    ensureButton();          // hide it again if we've dropped back to the home screen
     ei = 0; bondSel = 0; evtSel = 0; npcSel = 0; locSel = 0; giftSel = 0; editing = null;
     lastQueryVec = null;
     buildInjection();

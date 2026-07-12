@@ -14,10 +14,21 @@ Part of the **Tavern RPG Suite**. Reads `window.RPG.vitals` (health / conditions
 
 ## Install
 
-1. Drop the folder into `SillyTavern/data/<user>/extensions/` and reload.
-2. Extension settings → tick **Enable Diary** → fill in **AI (OpenRouter)**: API URL, key, model.
-3. A **book button** appears on the right edge of the screen with the other suite buttons. Click it, tap the
-   cover to open. Drag the window by its header; close it with the ✕ on that header.
+**From SillyTavern:** *Extensions → Install extension* → paste this repo's URL.
+**Manually:** drop the folder into `SillyTavern/data/<user>/extensions/` and reload.
+
+Then: extension settings → tick **Enable Diary** → fill in **AI (OpenRouter)**: API URL, key, model.
+
+A **book button** appears on the right edge of the screen *inside a chat* (not on the home screen), with the
+other suite buttons. Click it to open the diary, click again to close. Tap the cover to open the book; drag
+the window by its header.
+
+### Requirements
+
+- SillyTavern (recent version).
+- An OpenAI-compatible API for the summaries — OpenRouter works out of the box.
+- Optional: **RPG Scene Card ≥ 1.5.0** for in-game dates/weather/locations, **RPG Vitals** for health in
+  entries. Everything works without them, just with system dates instead of game dates.
 
 ---
 
@@ -60,6 +71,25 @@ image URL or click **📁 File** (auto-shrunk so it won't bloat your save). A **
 entries, events and people as you type.
 
 ---
+
+## The Memory tab
+
+See exactly what the AI is being told. The tab shows the memory text in full, how many words it is, and how
+many messages it covers (`47/120 · 73 new, not summarized yet`). From here you can:
+
+- **✎ Edit memory** — it's plain text; fix or add anything by hand.
+- **🔓 Lock text** — freeze the memory so summarizing stops rewriting it. Events, NPCs, gifts and relationships
+  keep updating as usual; the AI's proposed rewrite is kept as a **draft** you can accept, append or discard.
+- **Version history** — every summarize snapshots the previous text. If the AI drops something, restore the
+  old version with ⟲. A big shrink also raises a warning.
+- **Saved memories library** — rename, delete or pull any memory into this chat.
+
+## Bonds tab
+
+Tracks how everyone actually feels. The focus character's bond with you (level + status line) sits on top,
+then every NPC with a relationship level. Each has a **drift sparkline** showing how the bond developed, plus
+a warning if someone cooled sharply (25+ points below their peak) — a sign the AI regressed them. These levels
+are also injected every turn with an explicit "do not regress" instruction.
 
 ## 📌 Pinning — the "never forget this" button
 
