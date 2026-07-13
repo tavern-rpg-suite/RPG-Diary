@@ -38,6 +38,7 @@ const I18N = {
         record_n: 'RECORD {i} / {n}', weather: 'WEATHER:', mood: 'MOOD:', trust: 'TRUST', relationship: 'RELATIONSHIP',
         tab_mem: 'Memory', mem_h1: 'What the AI is told', mem_words: 'Words', mem_covered: 'Messages summarized', mem_behind: '{n} new, not summarized yet', mem_uptodate: 'up to date',
         mem_none: 'No memory yet. Press Summarize chat, or pull one in with Continue from…',
+        mem_tolib: '💾 To library', mem_tolib_ok: 'Saved to the library — you can now merge it or pull it into another chat.',
         mem_edit: '✎ Edit memory', mem_edit_hint: 'This exact text is what the AI receives. Fix or add anything you like.', mem_saved: 'Memory saved.',
         mem_shrunk: 'The memory shrank a lot ({was} → {now} words) — the AI may have dropped facts. Check the Memory tab; you can restore the previous version.',
         mem_lock: 'Lock text', mem_locked: 'Locked', mem_lock_hint: 'Freeze the memory TEXT. Summarizing still updates events, NPCs, gifts and relationships — it just stops rewriting this text.',
@@ -91,7 +92,7 @@ const I18N = {
         t_need_key: 'Set your OpenRouter URL / key / model in the extension settings first.',
         t_summing: 'Reading the whole chat and summarizing…', t_sum_chunk: 'Summarizing part {i}/{n}…', t_sum_done: 'Memory updated from {n} messages.',
         t_sum_empty: 'Nothing to summarize — the chat is empty.', t_sum_err: 'Summarize failed — check URL / key / model.',
-        t_sum_nonew: 'No new messages since the last summary.', t_sum_inc: 'Summarizing {n} new messages…',
+        t_sum_nonew: 'No new messages since the last summary.', t_sum_nomem: 'The dossier updated, but the AI returned no memory text. Press Summarize again, or use a stronger model — small models often skip long fields.', t_sum_inc: 'Summarizing {n} new messages…',
         inj_dossier_head: 'Established facts (events, people, gifts, places):',
         set_memory_h: 'Memory carried into other chats', set_carry: 'Carry this memory into NEW chats (so a fresh chat remembers)',
         set_carrydossier: 'Also carry events / NPCs / gifts / places',
@@ -109,6 +110,9 @@ const I18N = {
         // settings
         set_title: 'RPG Diary & Memory', set_enable: 'Enable Diary', set_lang: 'Language:',
         set_api: 'AI (OpenRouter) — used for summaries & entries', set_url: 'API URL', set_key: 'API key', set_model: 'Model', set_temp: 'Temperature',
+        set_maxtok: "Max REPLY tokens", set_maxtok_note: "This limits what the AI WRITES (the memory + dossier it returns) — not the size of your chat. Your chat is read in parts, so a 300k-token chat is fine. Lower this only if your model rejects the request.",
+        t_sum_many: 'This chat is long: summarizing it will make about {n} AI calls (it only happens once — later summaries read just the new messages). Continue?',
+        t_sum_trunc: "The AI's reply was cut off — raise 'Max reply tokens' in settings (or use a model with a bigger output limit), then summarize again.",
         set_inject_h: 'Hidden memory injection (invisible to you, seen by the AI)',
         set_injsummary: 'Include the summary text (uncheck to send only pins / RAG / relationships)',
         set_autoevery: 'Auto-summarize every N messages (0 = off):', set_autoevery_note: 'Works without a Scene Card. It only reads the NEW messages, so it stays cheap.',
@@ -135,6 +139,7 @@ const I18N = {
         record_n: 'ЗАПИСЬ {i} / {n}', weather: 'ПОГОДА:', mood: 'НАСТРОЕНИЕ:', trust: 'ДОВЕРИЕ', relationship: 'ОТНОШЕНИЯ',
         tab_mem: 'Память', mem_h1: 'Что получает ИИ', mem_words: 'Слов', mem_covered: 'Суммировано сообщений', mem_behind: 'новых, ещё не суммировано: {n}', mem_uptodate: 'всё актуально',
         mem_none: 'Памяти пока нет. Нажми «Суммировать чат» или подтяни через «Продолжить из…».',
+        mem_tolib: '💾 В библиотеку', mem_tolib_ok: 'Сохранено в библиотеку — теперь можно объединять и переносить в другие чаты.',
         mem_edit: '✎ Править память', mem_edit_hint: 'Именно этот текст получает ИИ. Правь и дописывай что угодно.', mem_saved: 'Память сохранена.',
         mem_shrunk: 'Память сильно сократилась ({was} → {now} слов) — ИИ мог потерять факты. Загляни во вкладку «Память», можно откатить прошлую версию.',
         mem_lock: 'Заморозить', mem_locked: 'Заморожено', mem_lock_hint: 'Заморозить ТЕКСТ памяти. Суммирование продолжит обновлять события, НПС, дары и отношения — просто перестанет переписывать этот текст.',
@@ -185,7 +190,7 @@ const I18N = {
         t_need_key: 'Сначала укажи URL / ключ / модель OpenRouter в настройках расширения.',
         t_summing: 'Читаю весь чат и суммирую…', t_sum_chunk: 'Суммирую часть {i}/{n}…', t_sum_done: 'Память обновлена по {n} сообщениям.',
         t_sum_empty: 'Нечего суммировать — чат пуст.', t_sum_err: 'Не удалось суммировать — проверь URL / ключ / модель.',
-        t_sum_nonew: 'Новых сообщений с прошлого суммирования нет.', t_sum_inc: 'Суммирую {n} новых сообщений…',
+        t_sum_nonew: 'Новых сообщений с прошлого суммирования нет.', t_sum_nomem: 'Досье обновилось, но ИИ не вернул текст памяти. Нажми «Суммировать» ещё раз или возьми модель посильнее — слабые модели часто пропускают длинные поля.', t_sum_inc: 'Суммирую {n} новых сообщений…',
         inj_dossier_head: 'Установленные факты (события, люди, дары, места):',
         set_memory_h: 'Память, переносимая в другие чаты', set_carry: 'Переносить эту память в НОВЫЕ чаты (чтобы новый чат помнил)',
         set_carrydossier: 'Переносить также события / НПС / дары / места',
@@ -201,6 +206,9 @@ const I18N = {
         inj_hint: 'Это уже установленная история. Считай эти отношения и события уже истинными; не откатывай персонажей к более холодному/раннему состоянию.',
         set_title: 'RPG Дневник и Память', set_enable: 'Включить дневник', set_lang: 'Язык:',
         set_api: 'ИИ (OpenRouter) — для резюме и записей', set_url: 'API URL', set_key: 'API-ключ', set_model: 'Модель', set_temp: 'Температура',
+        set_maxtok: 'Макс. токенов ОТВЕТА', set_maxtok_note: 'Ограничивает то, что ИИ ПИШЕТ (память и досье в ответе) — а не размер твоего чата. Чат читается по частям, так что даже 300k токенов не проблема. Снижай, только если модель отказывается принимать запрос.',
+        t_sum_many: 'Чат длинный: суммирование сделает примерно {n} запросов к ИИ (это разово — дальше читаются только новые сообщения). Продолжить?',
+        t_sum_trunc: 'Ответ ИИ оборвался — подними «Макс. токенов ответа» в настройках (или возьми модель с большим лимитом вывода) и суммируй заново.',
         set_inject_h: 'Скрытая инъекция памяти (тебе не видна, ИИ видит)',
         set_injsummary: 'Вставлять текст суммирования (сними — уйдут только 📌, RAG и отношения)',
         set_autoevery: 'Авто-суммирование каждые N сообщений (0 = выкл):', set_autoevery_note: 'Работает без Scene Card. Читает только НОВЫЕ сообщения, поэтому дёшево.',
@@ -238,6 +246,7 @@ const defaultSettings = {
     apiKey: '',
     model: 'google/gemma-4-31b-it',
     temperature: 0.7,
+    maxTokens: 16000,
     outputLang: 'follow',
     injectMemory: true,
     injectSummary: true,        // the summary text block specifically (separate from RAG/diary)
@@ -398,7 +407,7 @@ function nowLabel() {
 }
 
 /* ============================================================ AI */
-async function callAI(systemPrompt, userPrompt) {
+async function callAI(systemPrompt, userPrompt, maxTokens) {
     if (!settings.apiKey) throw new Error('no-key');
     const url = (settings.baseUrl || 'https://openrouter.ai/api/v1').replace(/\/$/, '') + '/chat/completions';
     for (let i = 0; i < 2; i++) {
@@ -409,7 +418,8 @@ async function callAI(systemPrompt, userPrompt) {
                 body: JSON.stringify({
                     model: settings.model,
                     messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
-                    temperature: typeof settings.temperature === 'number' ? settings.temperature : 0.7
+                    temperature: typeof settings.temperature === 'number' ? settings.temperature : 0.7,
+                    max_tokens: maxTokens || (parseInt(settings.maxTokens) || 16000)
                 })
             });
             if (res.status === 429 && i === 0) { await new Promise(r => setTimeout(r, 2000)); continue; }
@@ -419,6 +429,20 @@ async function callAI(systemPrompt, userPrompt) {
         } catch (e) { if (i === 1) throw e; }
     }
     return '';
+}
+// Models don't always honour the schema: "memory" can arrive as a string, an array of paragraphs,
+// or an object. Previously anything but a string was silently dropped — the dossier updated and the
+// memory stayed empty. Coerce whatever we get into text.
+function coerceText(v) {
+    if (!v) return '';
+    if (typeof v === 'string') return v.trim();
+    if (Array.isArray(v)) return v.map(coerceText).filter(Boolean).join('\n\n');
+    if (typeof v === 'object') {
+        if (typeof v.text === 'string') return v.text.trim();
+        if (typeof v.summary === 'string') return v.summary.trim();
+        return Object.values(v).map(coerceText).filter(Boolean).join('\n');
+    }
+    return String(v).trim();
 }
 function parseJSON(raw) {
     if (!raw) return null;
@@ -574,40 +598,45 @@ function existingDossierBlock() {
 - Only create a NEW entry for someone/something genuinely not in the list.
 `;
 }
-function reducePrompt(prior) {
-    const { user, char } = names();
-    const priorBlock = prior ? `\nEXISTING MEMORY (earlier history) — MERGE with the new facts. Keep every fact already here; clarify vague references (which event, where; which item, from where; which debt, on what terms). Do not drop anything:\n"""${prior}"""\n` : '';
-    return `You build a factual LONG-TERM MEMORY DOSSIER so a BRAND-NEW chat (characters start knowing nothing) can rely on it and NOT reset the relationship to an earlier/colder state.
-Focus character: "${char}". Player character: "${user}".${priorBlock}${existingDossierBlock()}
-
-ABSOLUTELY CRITICAL — the #1 failure to avoid:
-Do NOT write in a character's voice. Do NOT write literary/introspective prose. A summary like "She has proven more resilient than anticipated; I am calibrating my finest tool" is a FAILURE — it conveys mood but loses the plot. Write a NEUTRAL, THIRD-PERSON, CONCRETE dossier. If a fact and a feeling compete for space, KEEP THE FACT.
-
-The "memory" text MUST explicitly state, where applicable:
-- The premise and any disguise/secret (e.g. WHY the character is dressed as a man; that she is attending the university in disguise; who knows and who must not find out).
-- Every hard event with cause → consequence: who was locked in where and why; who lost consciousness and FROM WHAT; injuries; traps; violence; escapes.
-- Every debt/obligation: the amount, to whom, EXACTLY how it was incurred, and exactly how it must be worked off.
-- Every rule, prohibition and permission a character imposed or granted, with conditions.
-- Any plans or intentions a character has FOR the other, including hidden ones.
-- Current relationship status and the concrete reasons behind it.
-- Intimacy/chemistry if present: who leads, preferences, tenderness vs roughness, and how it affects their bond (state it plainly).
-- Small recurring details, in-jokes, promises.
-End with one line stating the "settling-in" phase is over and the characters act as an established pair, so the AI does not regress ${char} to cold or dismissive.
-
-Return STRICT JSON only, no prose outside it:
-{
- "title": "<a short 3-7 word label for this memory, e.g. \"Rufus — Moriarty's operative\", in ${outLang()}>",
- "memory": "<factual third-person dossier in ${outLang()}, 250-600 words, plot facts first, feelings second>",
- "bond": {"trust":0-100,"status":"<one factual line: how ${char} currently feels about ${user} and where they stand — e.g. 'in love, protective, treats her as an equal partner'>"},
- "events": [{"title":"","when":"","where":"","who":"","what":"<what happened, cause and consequence, factual>"}],
- "npcs": [{"name":"","role":"","look":"<physical appearance>","how_met":"<the STORY of the first meeting: where, when, what happened — a full sentence, never yes/no>","note":"<how they relate to ${user} and WHY>","trust":0-100}],
- "locations": [{"name":"","desc":""}],
- "gifts": [{"dir":"out|in","item":"","who":"<from> → <to>","when":"","why":""}],
- "glossary": [{"term":"","def":""}],
- "entry": {"text":"<short first-person diary entry by ${char} about this stretch, in ${outLang()}>","mood":"","tags":["",""]}
+function memoryPrompt(prior) {
+    const nm = names();
+    const priorBlock = prior
+        ? '\nEXISTING MEMORY — merge the new facts into it and KEEP EVERY FACT already here. Clarify vague references (which event, where; which item, from where; which debt, on what terms). Never return a shorter, poorer version:\n"""' + prior + '"""\n'
+        : '';
+    return 'You write the LONG-TERM MEMORY for a roleplay, so that a BRAND-NEW chat (characters start knowing nothing) can rely on it and NOT reset the relationship to an earlier/colder state.\n'
+        + 'Focus character: "' + nm.char + '". Player character: "' + nm.user + '".' + priorBlock + '\n'
+        + 'ABSOLUTELY CRITICAL: do NOT write in a character\'s voice and do NOT write literary prose. "She has proven more resilient than anticipated; I am calibrating my finest tool" is a FAILURE — it keeps the mood and loses the plot. Write a NEUTRAL, THIRD-PERSON, CONCRETE dossier. If a fact and a feeling compete for space, KEEP THE FACT.\n\n'
+        + 'State explicitly, where applicable:\n'
+        + '- The premise and any disguise/secret (e.g. WHY she is dressed as a man; that she attends the university in disguise; who knows and who must not find out).\n'
+        + '- Every hard event with cause and consequence: who was locked in where and why; who lost consciousness AND FROM WHAT; injuries; traps; violence; escapes.\n'
+        + '- Every debt/obligation: amount, to whom, exactly how it was incurred, exactly how it must be worked off.\n'
+        + '- Every rule, prohibition and permission a character imposed or granted, with conditions.\n'
+        + '- Plans and intentions a character has FOR the other, including hidden ones.\n'
+        + '- Current relationship status and the concrete reasons behind it.\n'
+        + '- Intimacy/chemistry if present: who leads, preferences, tenderness vs roughness, and how it affects the bond.\n'
+        + '- Small recurring details, in-jokes, promises.\n'
+        + 'End with one line stating the settling-in phase is over and the characters act as an established pair, so the AI does not regress ' + nm.char + ' to cold or dismissive.\n\n'
+        + 'Return ONLY the memory text (300-700 words) in ' + outLang() + '. No JSON, no headings, no preamble.';
 }
-"events" must list the concrete plot beats (confinements, faintings, debts incurred, bargains struck, reveals, injuries, turning points) — this is the backbone; do not leave it empty if anything happened.
-"dir":"out" means ${user} gave it; "in" means ${user} received it. All human-readable text in ${outLang()}.`;
+function dossierPrompt() {
+    const nm = names();
+    return 'Extract structured records from the roleplay notes below. Focus character: "' + nm.char + '". Player: "' + nm.user + '".\n'
+        + existingDossierBlock() + '\n'
+        + 'Return STRICT JSON only, nothing else:\n'
+        + '{\n'
+        + ' "title": "<short 3-7 word label for this story, e.g. \'Rufus — Moriarty\'s operative\'>",\n'
+        + ' "bond": {"trust":0-100,"status":"<one factual line: how ' + nm.char + ' currently feels about ' + nm.user + ' and where they stand>"},\n'
+        + ' "events": [{"title":"","when":"","where":"","who":"","what":"<what happened, cause and consequence, factual>"}],\n'
+        + ' "npcs": [{"name":"","role":"","look":"<physical appearance>","how_met":"<the STORY of the first meeting: where, when, what happened — a full sentence, never yes/no>","note":"<how they relate to ' + nm.user + ' and WHY>","trust":0-100}],\n'
+        + ' "locations": [{"name":"","desc":""}],\n'
+        + ' "gifts": [{"dir":"out|in","item":"","who":"<from> → <to>","when":"","why":""}],\n'
+        + ' "glossary": [{"term":"","def":""}],\n'
+        + ' "entry": {"text":"<short first-person diary entry by ' + nm.char + ' about this stretch>","mood":"","tags":["",""]}\n'
+        + '}\n'
+        + 'KEEP THE REPLY SMALL: include a record ONLY if it is NEW, or if you have NEW information about it. Do NOT re-emit unchanged records — they are already saved.\n'
+        + 'BUT when you DO include a record that already exists, use the SAME EXACT NAME/TITLE and write the COMPLETE MERGED version (old facts + new facts, woven into one coherent description). Never return a shorter, poorer version of an existing record — that would erase what we know.\n'
+        + '"events" must capture the concrete plot beats (confinements, faintings, debts incurred, bargains, reveals, injuries, turning points).\n'
+        + '"dir":"out" means ' + nm.user + ' gave it; "in" means ' + nm.user + ' received it. All human-readable text in ' + outLang() + '.';
 }
 
 let aiBusy = false;
@@ -622,7 +651,10 @@ async function summarizeChat(force) {
     if (incremental && !lines.length) { toastr.info(t('t_sum_nonew')); return; }
     aiBusy = true; renderPanel();
     try {
-        const chunks = chunkLines(lines, 7000).slice(0, 40);
+        // Read the chat in parts. Bigger parts = fewer API calls; the cap only exists to stop a runaway
+        // job, and it is high enough for very long chats (300k+ tokens).
+        const chunks = chunkLines(lines, 15000).slice(0, 200);
+        if (chunks.length > 20 && !confirm(t('t_sum_many', { n: chunks.length }))) { aiBusy = false; renderPanel(); return; }
         let notes = '';
         if (chunks.length === 1) {
             notes = chunks[0];
@@ -630,17 +662,27 @@ async function summarizeChat(force) {
             const parts = [];
             for (let i = 0; i < chunks.length; i++) {
                 toastr.info(t('t_sum_chunk', { i: i + 1, n: chunks.length }));
-                const n = await callAI(mapPrompt(), chunks[i]);
+                const n = await callAI(mapPrompt(), chunks[i], 2500);   // notes only — no need for the full budget
                 if (n) parts.push(n);
             }
             notes = parts.join('\n');
         }
-        toastr.info(incremental ? t('t_sum_inc', { n: lines.length }) : t('t_summing'));
         const prior = (state.summary || '').trim();
-        const raw = await callAI(reducePrompt(prior), notes);
-        const obj = parseJSON(raw);
-        if (!obj) { toastr.error(t('t_sum_err')); aiBusy = false; renderPanel(); return; }
+        // TWO SEPARATE CALLS. Asking one reply to carry the memory AND the whole merged dossier makes the
+        // output enormous once a dossier exists — it hits the token limit, gets cut off, and the memory
+        // (which the model writes after the dossier rules) is the part that goes missing. Splitting them
+        // means the memory can never be starved by a big dossier.
+        toastr.info(incremental ? t('t_sum_inc', { n: lines.length }) : t('t_summing'));
+        const memText = (await callAI(memoryPrompt(prior), notes, 3500) || '').trim();
+
+        const rawJson = await callAI(dossierPrompt(), notes);
+        const obj = parseJSON(rawJson) || {};
+        if (rawJson && !/}\s*$/.test(rawJson.trim())) toastr.warning(t('t_sum_trunc'), '', { timeOut: 14000 });
+        if (memText) obj.memory = memText;
+
+        if (!coerceText(obj.memory) && !obj.events && !obj.npcs) { toastr.error(t('t_sum_err')); aiBusy = false; renderPanel(); return; }
         applySummary(obj, prior, lines.length);
+        if (!(state.summary || '').trim() && !state.memoryLocked) toastr.warning(t('t_sum_nomem'), '', { timeOut: 12000 });
         state.summarizedCount = allLines.length;
         updateCarry();
         toastr.success(prior ? t('t_merged') : t('t_sum_done', { n: lines.length }));
@@ -650,15 +692,44 @@ async function summarizeChat(force) {
     aiBusy = false;
     saveState(); renderPanel(); buildInjection();
 }
+// Save (or refresh) THIS chat's memory in the library. Called at the END of a summarize, so the
+// snapshot contains the events/NPCs that were just merged — and called even when the memory text is
+// locked or the AI returned none, so a chat can never become invisible to Merge / Continue-from.
+function saveToLibrary(autoTitleRaw) {
+    if (!state) return false;
+    const text = (state.summary || '').trim();
+    const hasDossier = state.events.length || state.npcs.length || state.gifts.length;
+    if (!text && !hasDossier) return false;                 // truly nothing to save yet
+    if (!Array.isArray(settings.summaryLibrary)) settings.summaryLibrary = [];
+    const key = chatKey() || '';
+    const autoTitle = (autoTitleRaw && String(autoTitleRaw).trim()) || (getContext().name2 || '') || t('merge_label');
+    const entry = {
+        ts: Date.now(), char: getContext().name2 || '', srcChat: key,
+        chat: (getContext().name2 || '') + ' · ' + new Date().toLocaleDateString(),
+        text: text, dossier: dossierDigest(state), data: snapshotDossier(),
+        scenes: settings.carryScenes ? buildSceneArchive() : []
+    };
+    const existing = (settings.libraryMode !== 'append') ? settings.summaryLibrary.find(x => x.srcChat && x.srcChat === key) : null;
+    if (existing) {
+        const keepTitle = existing.title;
+        Object.assign(existing, entry);
+        existing.title = keepTitle || String(autoTitle).slice(0, 60);   // never lose a name the user set
+    } else {
+        settings.summaryLibrary.unshift(Object.assign({ id: genId(), title: String(autoTitle).slice(0, 60) }, entry));
+    }
+    settings.summaryLibrary = settings.summaryLibrary.slice(0, 40);
+    return true;
+}
 function applySummary(obj, hadPrior, msgN) {
-    if (obj.memory && typeof obj.memory === 'string' && state.memoryLocked) {
+    const memText = coerceText(obj.memory);
+    if (memText && state.memoryLocked) {
         // Memory text is frozen by the user. Keep the AI's proposal as a draft they can look at,
         // and let every other fact (events, NPCs, gifts, bond…) keep updating as usual.
-        state.pendingMemory = obj.memory.trim();
+        state.pendingMemory = memText;
         toastr.info(t('mem_locked_kept'), '', { timeOut: 9000 });
-    } else if (obj.memory && typeof obj.memory === 'string') {
+    } else if (memText) {
         const prevText = (state.summary || '').trim();
-        const nextText = obj.memory.trim();
+        const nextText = memText;
         // Always snapshot the version we are about to replace, so nothing the model drops is gone for good.
         if (prevText) {
             state.summaries.unshift({ id: genId(), ts: Date.now(), name: getContext().name2 || '', text: prevText, words: prevText.split(/\s+/).length });
@@ -669,24 +740,6 @@ function applySummary(obj, hadPrior, msgN) {
         const pw = prevText ? prevText.split(/\s+/).length : 0;
         const nw = nextText.split(/\s+/).length;
         if (pw > 80 && nw < pw * 0.65) toastr.warning(t('mem_shrunk', { was: pw, now: nw }), '', { timeOut: 12000 });
-        if (!Array.isArray(settings.summaryLibrary)) settings.summaryLibrary = [];
-        const autoTitle = (obj.title && String(obj.title).trim()) || (getContext().name2 || '') || t('merge_label');
-        const key = chatKey() || '';
-        const entry = {
-            ts: Date.now(), char: getContext().name2 || '', srcChat: key,
-            chat: (getContext().name2 || '') + ' · ' + new Date().toLocaleDateString(),
-            text: state.summary, dossier: dossierDigest(state), data: snapshotDossier(),
-            scenes: settings.carryScenes ? buildSceneArchive() : []
-        };
-        const existing = (settings.libraryMode !== 'append') ? settings.summaryLibrary.find(x => x.srcChat && x.srcChat === key) : null;
-        if (existing) {
-            // one memory per chat that keeps growing — the library doesn't fill up with near-copies
-            Object.assign(existing, entry);
-            if (!existing.title) existing.title = String(autoTitle).slice(0, 60);
-        } else {
-            settings.summaryLibrary.unshift(Object.assign({ id: genId(), title: String(autoTitle).slice(0, 60) }, entry));
-        }
-        settings.summaryLibrary = settings.summaryLibrary.slice(0, 40);
     }
     if (obj.bond && typeof obj.bond === 'object') {
         const v = (typeof obj.bond.trust === 'number') ? clamp(obj.bond.trust, 0, 100) : (state.bond && state.bond.trust);
@@ -710,6 +763,7 @@ function applySummary(obj, hadPrior, msgN) {
         });
     }
     const st = currentStamp(); if (st.day != null) state.lastSummaryDay = st.day;
+    saveToLibrary(obj.title);   // after the merges, so the saved snapshot is the fresh one
 }
 function norm(x) { return String(x || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim(); }
 // Merge a field so an update can only ADD knowledge, never silently destroy it:
@@ -1259,9 +1313,19 @@ function memL() {
         <div class="rd-meta"><b>${t('mem_words')}:</b> ${words} · <b>${t('mem_covered')}:</b> ${done}/${total}${behind ? ` · <span style="color:var(--oxblood)">${t('mem_behind', { n: behind })}</span>` : ` · ${t('mem_uptodate')}`}</div>
         <div class="rd-rule"></div>`;
     const lockBtn = `<button class="rd-btn ${state.memoryLocked ? 'gold' : ''} rpg-d-memlock" title="${escapeHtml(t('mem_lock_hint'))}">${state.memoryLocked ? '🔒 ' + t('mem_locked') : '🔓 ' + t('mem_lock')}</button>`;
-    if (!mem) return head + `<div class="rd-empty">${t('mem_none')}</div>
-        <div class="rd-acts"><button class="rd-btn prim rpg-d-sum">${t('act_summarize')}</button>
-        <button class="rd-btn rpg-d-continue">${t('cont_btn')}</button></div>`;
+    const draft0 = (state.pendingMemory || '').trim();
+    if (!mem) return head
+        + (state.memoryLocked ? `<div class="rd-warn" style="margin-bottom:6px">🔒 ${escapeHtml(t('mem_lock_on'))}</div>` : '')
+        + (draft0 ? `<div class="rd-draft">
+            <div class="rd-eyebrow">${t('mem_draft')}</div>
+            <div class="rd-draft-t">${escapeHtml(draft0.slice(0, 220))}…</div>
+            <div class="rd-acts">
+                <button class="rd-btn rpg-d-draft-apply">${t('mem_draft_apply')}</button>
+                <button class="rd-btn rpg-d-draft-drop">${t('mem_draft_drop')}</button>
+            </div></div>` : `<div class="rd-empty">${t('mem_none')}</div>`)
+        + `<div class="rd-acts"><button class="rd-btn prim rpg-d-sum">${t('act_summarize')}</button>
+            ${lockBtn}
+            <button class="rd-btn rpg-d-continue">${t('cont_btn')}</button></div>`;
     const draft = (state.pendingMemory || '').trim();
     const draftCard = draft ? `<div class="rd-draft">
             <div class="rd-eyebrow">${t('mem_draft')}</div>
@@ -1277,6 +1341,7 @@ function memL() {
             <button class="rd-btn prim rpg-d-sum">${t('act_summarize')}</button>
             ${lockBtn}
             <button class="rd-btn rpg-d-memedit">${t('mem_edit')}</button>
+            <button class="rd-btn rpg-d-libsave">${t('mem_tolib')}</button>
             <button class="rd-btn rpg-d-resum" title="${escapeHtml(t('act_resum'))}">⟲</button>
         </div>`;
 }
@@ -1573,11 +1638,10 @@ function deleteLib(id) {
 }
 function carrySources() {
     const lib = (Array.isArray(settings.summaryLibrary) ? settings.summaryLibrary : []).map(x => Object.assign({ src: 'lib' }, x));
-    const here = chatKey();
     const seen = new Set(lib.map(x => x.srcChat).filter(Boolean));
-    // any other chat that has a diary of its own but never made it into the library
+    // any chat that has a diary of its own but never made it into the library (including this one)
     for (const key in (settings.chatStates || {})) {
-        if (key === here || seen.has(key)) continue;
+        if (seen.has(key)) continue;
         const st = settings.chatStates[key];
         if (!st) continue;
         const size = (st.entries || []).length + (st.events || []).length + (st.npcs || []).length + ((st.notes || '').trim() ? 1 : 0);
@@ -1601,7 +1665,7 @@ function continueForm() {
         <div class="rd-acts"><button class="rd-btn prim rpg-d-docont">${t('cont_do')}</button><button class="rd-btn rpg-d-cancelf">${t('act_cancel')}</button></div>`;
 }
 function mergeForm() {
-    const lib = Array.isArray(settings.summaryLibrary) ? settings.summaryLibrary : [];
+    const lib = carrySources().filter(x => (x.text || '').trim());   // anything with an actual memory text
     const sel = editing.sel || {};
     const rows = lib.length ? lib.map(s => libRow(s, 'check', sel[s.id])).join('')
         : `<div class="rd-empty" style="flex:none;padding:14px">${t('no_library')}</div>`;
@@ -1757,6 +1821,11 @@ function wire() {
     const ct = root.querySelector('.rpg-d-continue'); if (ct) ct.onclick = () => { editing = { type: 'continue' }; renderPanel(); };
     const me = root.querySelector('.rpg-d-memedit'); if (me) me.onclick = () => { editing = { type: 'memory', data: { summary: state.summary || '' } }; renderPanel(); };
     const ml = root.querySelector('.rpg-d-memlock'); if (ml) ml.onclick = toggleMemLock;
+    const ls = root.querySelector('.rpg-d-libsave');
+    if (ls) ls.onclick = () => {
+        if (saveToLibrary()) { saveSettings(); renderPanel(); toastr.success(t('mem_tolib_ok')); }
+        else toastr.info(t('mem_none'));
+    };
     const da = root.querySelector('.rpg-d-draft-apply'); if (da) da.onclick = () => applyDraft('replace');
     const dp = root.querySelector('.rpg-d-draft-append'); if (dp) dp.onclick = () => applyDraft('append');
     const dd = root.querySelector('.rpg-d-draft-drop'); if (dd) dd.onclick = () => applyDraft('drop');
@@ -1824,9 +1893,9 @@ function pickPortrait() {
 }
 function doMerge() {
     const root = document.getElementById('rpg-diary-root');
-    const lib = Array.isArray(settings.summaryLibrary) ? settings.summaryLibrary : [];
+    const lib = carrySources();
     const sel = editing.sel || {};
-    const texts = lib.filter(s => sel[s.id]).map(s => s.text);
+    const texts = lib.filter(s => sel[s.id]).map(s => s.text).filter(x => (x || '').trim());
     const pasted = root.querySelector('.rpg-d-mpaste'); if (pasted && pasted.value.trim()) texts.push(pasted.value.trim());
     if (texts.length < 2) { toastr.info(t('t_merge_need2')); return; }
     mergeSummaries(texts);
@@ -2095,7 +2164,9 @@ function settingsHtml() {
                 <div class="rd-set-row"><label style="min-width:70px">${escapeHtml(t('set_url'))}</label><input id="rpgd-url" class="text_pole" style="flex:1" type="text"></div>
                 <div class="rd-set-row"><label style="min-width:70px">${escapeHtml(t('set_key'))}</label><input id="rpgd-key" class="text_pole" style="flex:1" type="password"></div>
                 <div class="rd-set-row"><label style="min-width:70px">${escapeHtml(t('set_model'))}</label><input id="rpgd-model" class="text_pole" style="flex:1" type="text"></div>
-                <div class="rd-set-row"><label style="min-width:70px">${escapeHtml(t('set_temp'))}</label><input id="rpgd-temp" class="text_pole" style="width:70px" type="number" min="0" max="2" step="0.1"></div>
+                <div class="rd-set-row"><label style="min-width:70px">${escapeHtml(t('set_temp'))}</label><input id="rpgd-temp" class="text_pole" style="width:70px" type="number" min="0" max="2" step="0.1">
+                    <label>${escapeHtml(t('set_maxtok'))}</label><input id="rpgd-maxtok" class="text_pole" style="width:90px" type="number" min="1000" max="64000" step="1000"></div>
+                <div class="rd-set-row" style="font-size:11px;opacity:.75">${escapeHtml(t('set_maxtok_note'))}</div>
                 <hr><b>${escapeHtml(t('set_inject_h'))}</b>
                 <label class="checkbox_label"><input type="checkbox" id="rpgd-injmemory"> ${escapeHtml(t('set_injmemory'))}</label>
                 <label class="checkbox_label"><input type="checkbox" id="rpgd-injsummary"> ${escapeHtml(t('set_injsummary'))}</label>
@@ -2158,7 +2229,7 @@ function bindSettings() {
     const exAll = document.getElementById('rpgd-exportall'); if (exAll) exAll.onclick = exportAll;
     const imAll = document.getElementById('rpgd-importall'); if (imAll) imAll.onclick = importAll;
     set('rpgd-lang', 'language', 'str'); set('rpgd-outlang', 'outputLang', 'str');
-    set('rpgd-url', 'baseUrl', 'str'); set('rpgd-key', 'apiKey', 'str'); set('rpgd-model', 'model', 'str'); set('rpgd-temp', 'temperature', 'num');
+    set('rpgd-url', 'baseUrl', 'str'); set('rpgd-key', 'apiKey', 'str'); set('rpgd-model', 'model', 'str'); set('rpgd-temp', 'temperature', 'num'); set('rpgd-maxtok', 'maxTokens', 'int');
     set('rpgd-injmemory', 'injectMemory', 'check'); set('rpgd-injsummary', 'injectSummary', 'check');
     set('rpgd-injmode', 'injectMode', 'str');
     set('rpgd-injnew', 'injectOnNew', 'check'); set('rpgd-injdiary', 'injectDiary', 'check'); set('rpgd-injfull', 'injectWhenFull', 'check');
