@@ -81,7 +81,8 @@ const I18N = {
         exportall_btn: 'Export ALL chats', importall_btn: 'Import ALL chats',
         t_importall_confirm: 'Import {n} chat diaries? Existing chats with the same id will be overwritten; the rest are kept.', t_importall_done: 'Imported {n} chat diaries.',
         lib_rename: 'Rename memory', lib_del: 'Delete memory', lib_del_confirm: 'Delete the saved memory "{name}"? This cannot be undone. (Your chat diaries are not affected.)', lib_deleted: 'Memory deleted.',
-        merge_dest: 'The merged memory becomes the memory of THIS chat ({chat}) and is saved to the library.',
+        merge_dest: 'The merged memory becomes the memory of THIS chat ({chat}) and is saved to the library. The NPCs, events, locations, gifts and glossary of the sources are merged in too.',
+        merge_dossier: 'Also merged in: {e} new events, {n} new NPCs (plus locations, gifts and glossary).',
         t_import_bad: "That file isn't a valid diary export.", t_import_confirm: "Replace THIS chat's diary with the imported one? (Your other chats are untouched.)", t_import_done: 'Diary imported.',
         // fields
         f_date: 'Date', f_weather: 'Weather', f_loc: 'Location', f_mood: 'Mood', f_tags: 'Tags (comma-separated)', f_text: 'Text',
@@ -181,7 +182,8 @@ const I18N = {
         exportall_btn: 'Экспорт ВСЕХ чатов', importall_btn: 'Импорт ВСЕХ чатов',
         t_importall_confirm: 'Импортировать дневники {n} чатов? Чаты с теми же id перезапишутся, остальные сохранятся.', t_importall_done: 'Импортировано дневников: {n}.',
         lib_rename: 'Переименовать память', lib_del: 'Удалить память', lib_del_confirm: 'Удалить сохранённую память «{name}»? Это необратимо. (Дневники чатов не пострадают.)', lib_deleted: 'Память удалена.',
-        merge_dest: 'Объединённая память станет памятью ЭТОГО чата ({chat}) и сохранится в библиотеку.',
+        merge_dest: 'Объединённая память станет памятью ЭТОГО чата ({chat}) и сохранится в библиотеку. НПС, события, локации, дары и глоссарий из источников тоже объединятся.',
+        merge_dossier: 'Также перенесено: новых событий — {e}, новых НПС — {n} (плюс локации, дары и глоссарий).',
         t_import_bad: 'Это не похоже на файл дневника.', t_import_confirm: 'Заменить дневник ЭТОГО чата импортированным? (Другие чаты не тронутся.)', t_import_done: 'Дневник импортирован.',
         f_date: 'Дата', f_weather: 'Погода', f_loc: 'Локация', f_mood: 'Настроение', f_tags: 'Теги (через запятую)', f_text: 'Текст',
         f_name: 'Имя', f_role: 'Роль / род занятий', f_look: 'Внешность', f_met: 'Как встретились', f_note: 'Заметка', f_trust: 'Отношения 0-100',
@@ -855,7 +857,7 @@ function mergeGlossary(arr) {
         ex.def = mergeText(ex.def, t2.def, 500);
     }
 }
-async function mergeSummaries(texts) {
+async function mergeSummaries(texts, sources) {
     if (aiBusy) return;
     if (!settings.apiKey) { toastr.warning(t('t_need_key')); return; }
     const clean = (texts || []).map(s => String(s || '').trim()).filter(Boolean);
@@ -871,9 +873,24 @@ Reconcile overlaps, keep every distinct fact, and CLARIFY vague references: if a
         state.summary = merged.trim();
         state.summaries.unshift({ id: genId(), ts: Date.now(), name: 'merge', text: state.summary });
         state.summaries = state.summaries.slice(0, 12);
-        if (!Array.isArray(settings.summaryLibrary)) settings.summaryLibrary = [];
-        settings.summaryLibrary.unshift({ id: genId(), ts: Date.now(), title: t('merge_label') + ': ' + (getContext().name2 || ''), char: getContext().name2 || '', srcChat: chatKey() || '', chat: (t('merge_label')) + ' · ' + new Date().toLocaleDateString(), text: state.summary, dossier: dossierDigest(state), data: snapshotDossier(), scenes: settings.carryScenes ? buildSceneArchive() : [] });
-        settings.summaryLibrary = settings.summaryLibrary.slice(0, 40);
+        // Merging is not just about the prose: pull each source's NPCs, events, locations, gifts and
+        // glossary into this chat as well. The merge is additive, so overlapping records combine
+        // instead of duplicating, and nothing already here is lost.
+        let addedE = 0, addedN = 0;
+        for (const src of (sources || [])) {
+            const d = src.data || snapshotFromChat(src.srcChat);
+            if (!d) continue;
+            const beforeE = state.events.length, beforeN = state.npcs.length;
+            applyDossierData(d);
+            addedE += state.events.length - beforeE;
+            addedN += state.npcs.length - beforeN;
+            if (settings.carryScenes && Array.isArray(src.scenes) && src.scenes.length) {
+                state.archiveScenes = (state.archiveScenes || []).concat(src.scenes).slice(-120);
+            }
+        }
+        if (addedE || addedN) toastr.info(t('merge_dossier', { e: addedE, n: addedN }));
+        // same path as a normal summarize: one living memory per chat, refreshed — not a duplicate entry
+        saveToLibrary(t('merge_label') + ': ' + (getContext().name2 || ''));
         updateCarry();
         toastr.success(t('t_merged'));
     } catch (e) { toastr.error(t('t_sum_err')); }
@@ -1895,10 +1912,11 @@ function doMerge() {
     const root = document.getElementById('rpg-diary-root');
     const lib = carrySources();
     const sel = editing.sel || {};
-    const texts = lib.filter(s => sel[s.id]).map(s => s.text).filter(x => (x || '').trim());
+    const picked = lib.filter(s => sel[s.id]);
+    const texts = picked.map(s => s.text).filter(x => (x || '').trim());
     const pasted = root.querySelector('.rpg-d-mpaste'); if (pasted && pasted.value.trim()) texts.push(pasted.value.trim());
     if (texts.length < 2) { toastr.info(t('t_merge_need2')); return; }
-    mergeSummaries(texts);
+    mergeSummaries(texts, picked);   // sources travel with the texts so their dossiers merge too
 }
 function findItem(type, id) {
     const map = { entry: 'entries', evt: 'events', npc: 'npcs', loc: 'locations', gift: 'gifts', gloss: 'glossary' };
