@@ -10,8 +10,6 @@ chat can remember the whole story**.
 Part of the **Tavern RPG Suite**. Reads `window.RPG.vitals` (health / conditions) and `window.RPG.scene`
 (in-game date, time, weather, location) when those modules are installed.
 
-**Version 3.7.2**
-
 ---
 
 ## Install

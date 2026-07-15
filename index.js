@@ -303,12 +303,20 @@ function saveSettings(immediate = true) {
 }
 
 let state = null;
+// ---- chat ownership: the diary of one chat must never be written into another ----
+// Summarize/merge are LONG multi-await jobs (a big chat = minutes of API calls); without this,
+// switching chats mid-run applied the old chat's memory and dossier to the NEW chat.
+let currentChatId = null;   // chat the in-memory `state` belongs to
+let pendingChatId = null;   // id reported by CHAT_CHANGED, before the state is (re)loaded
+let stateReady = false;     // false while switching chats; saving is blocked
+function ownsChat(id) { return !!(stateReady && id && currentChatId === id && chatKey() === id); }
 function freshState() {
     return { author: '', entries: [], events: [], npcs: [], locations: [], gifts: [], glossary: [], notes: '', summary: '', memoryLocked: false, pendingMemory: '', carriedDossier: '', archiveScenes: [], bond: null, summaries: [], summarizedCount: 0, lastSummaryDay: null, meta: { created: Date.now() } };
 }
 function loadState() {
-    const chatId = chatKey();
-    if (!chatId) { state = freshState(); return; }
+    const chatId = pendingChatId || chatKey();
+    if (!chatId) { currentChatId = null; pendingChatId = null; stateReady = false; state = freshState(); return; }
+    currentChatId = chatId; pendingChatId = null; stateReady = true;
     if (settings.chatStates[chatId]) {
         state = settings.chatStates[chatId];
         const f = freshState();
@@ -321,8 +329,9 @@ function loadState() {
     }
 }
 function saveState(immediate = true) {
-    const chatId = chatKey();
-    if (chatId) settings.chatStates[chatId] = state;
+    if (!stateReady || !currentChatId) return;               // mid-switch: do not write
+    if (chatKey() && chatKey() !== currentChatId) return;    // state belongs to a chat we left
+    settings.chatStates[currentChatId] = state;
     saveSettings(immediate);
     scheduleEmbed();
 }
@@ -469,7 +478,7 @@ async function testEmbeddings() {
         if (!dim) throw new Error('empty');
         toastr.success(t('embed_ok', { model: settings.embedModel, dim }));
     } catch (e) {
-        toastr.error(t('embed_fail', { err: String(e.message || e) }), '', { timeOut: 12000 });
+        toastr.error(t('embed_fail', { err: escapeHtml(String(e.message || e)) }), '', { timeOut: 12000 });
     }
     if (btn) { btn.disabled = false; btn.textContent = t('embed_test'); }
 }
@@ -503,6 +512,7 @@ function scheduleEmbed() {
 async function refreshEmbeddings() {
     if (embedWorking || !embedConfigured() || !state) return;
     embedWorking = true;
+    const myChat = currentChatId;   // an in-flight refresh must not hand its query vector to another chat
     try {
         const chunks = memoryChunks();
         // 1) embed any chunk we haven't seen this exact text for (cached by content, not position,
@@ -517,10 +527,18 @@ async function refreshEmbeddings() {
             const vs = await embed(need.slice(i, i + BATCH));
             vs.forEach((v, j) => { const k = needKeys[i + j]; if (k && v) vecCache.set(k, v); });
         }
+        // Scene-chunk boundaries shift as the chat grows, so old boundary keys become orphans;
+        // cap the cache so a long session doesn't hoard thousands of dead vectors in memory.
+        if (vecCache.size > 2500) {
+            const drop = vecCache.size - 2000;
+            let i = 0;
+            for (const k of vecCache.keys()) { vecCache.delete(k); if (++i >= drop) break; }   // Map keeps insertion order → oldest first
+        }
         // 2) embed the current query (recent messages + location)
+        if (!ownsChat(myChat)) { embedWorking = false; return; }   // switched chats: keep the chunk cache, skip the query
         const q = buildTranscript().slice(-6).join(' ') + ' ' + (readScene() && readScene().loc || '');
-        if (q.trim()) { const qv = await embed([q.slice(0, 4000)]); if (qv && qv[0]) lastQueryVec = qv[0]; }
-        buildInjection(); // re-inject now that vectors are fresh
+        if (q.trim()) { const qv = await embed([q.slice(0, 4000)]); if (qv && qv[0] && ownsChat(myChat)) lastQueryVec = qv[0]; }
+        if (ownsChat(myChat)) buildInjection(); // re-inject now that vectors are fresh
     } catch (e) { /* silent: BM25 remains the fallback */ }
     embedWorking = false;
 }
@@ -651,6 +669,7 @@ async function summarizeChat(force) {
     const incremental = !force && settings.incremental !== false && !!(state.summary || '').trim() && already > 0 && already < allLines.length;
     const lines = incremental ? allLines.slice(already) : allLines;
     if (incremental && !lines.length) { toastr.info(t('t_sum_nonew')); return; }
+    const myChat = currentChatId;   // a summarize can run for MINUTES — the chat may change under it
     aiBusy = true; renderPanel();
     try {
         // Read the chat in parts. Bigger parts = fewer API calls; the cap only exists to stop a runaway
@@ -663,12 +682,14 @@ async function summarizeChat(force) {
         } else {
             const parts = [];
             for (let i = 0; i < chunks.length; i++) {
+                if (!ownsChat(myChat)) { aiBusy = false; return; }   // chat switched — abort quietly
                 toastr.info(t('t_sum_chunk', { i: i + 1, n: chunks.length }));
                 const n = await callAI(mapPrompt(), chunks[i], 2500);   // notes only — no need for the full budget
                 if (n) parts.push(n);
             }
             notes = parts.join('\n');
         }
+        if (!ownsChat(myChat)) { aiBusy = false; return; }
         const prior = (state.summary || '').trim();
         // TWO SEPARATE CALLS. Asking one reply to carry the memory AND the whole merged dossier makes the
         // output enormous once a dossier exists — it hits the token limit, gets cut off, and the memory
@@ -678,6 +699,7 @@ async function summarizeChat(force) {
         const memText = (await callAI(memoryPrompt(prior), notes, 3500) || '').trim();
 
         const rawJson = await callAI(dossierPrompt(), notes);
+        if (!ownsChat(myChat)) { aiBusy = false; return; }   // never apply the old chat's memory to a new chat
         const obj = parseJSON(rawJson) || {};
         if (rawJson && !/}\s*$/.test(rawJson.trim())) toastr.warning(t('t_sum_trunc'), '', { timeOut: 14000 });
         if (memText) obj.memory = memText;
@@ -862,6 +884,7 @@ async function mergeSummaries(texts, sources) {
     if (!settings.apiKey) { toastr.warning(t('t_need_key')); return; }
     const clean = (texts || []).map(s => String(s || '').trim()).filter(Boolean);
     if (clean.length < 2) { toastr.info(t('t_merge_need2')); return; }
+    const myChat = currentChatId;
     aiBusy = true; renderPanel();
     try {
         const { user, char } = names();
@@ -869,6 +892,7 @@ async function mergeSummaries(texts, sources) {
 Reconcile overlaps, keep every distinct fact, and CLARIFY vague references: if an event, say where and roughly when; if an item, say which one and where it came from; if a relationship claim, say why. Keep chronology sensible even across sources. Do not contradict yourself; if two sources conflict, prefer the more specific/among later one and note the change briefly. Write in ${outLang()}. Return ONLY the merged memory text (200-600 words), no headings, no preamble.`;
         const usr = clean.map((s, i) => `--- SUMMARY ${i + 1} ---\n${s}`).join('\n\n');
         const merged = await callAI(sys, usr);
+        if (!ownsChat(myChat)) { aiBusy = false; return; }   // chat changed during the merge
         if (!merged) { toastr.error(t('t_sum_err')); aiBusy = false; renderPanel(); return; }
         state.summary = merged.trim();
         state.summaries.unshift({ id: genId(), ts: Date.now(), name: 'merge', text: state.summary });
@@ -904,6 +928,7 @@ async function generateEntry() {
     if (!settings.apiKey) { toastr.warning(t('t_need_key')); return; }
     const lines = buildTranscript();
     if (!lines.length) { toastr.info(t('t_sum_empty')); return; }
+    const myChat = currentChatId;
     aiBusy = true; renderPanel();
     try {
         const { user, char } = names();
@@ -913,6 +938,7 @@ async function generateEntry() {
         const vitLine = vit ? `Current state: ${vit.hp != null ? `HP ${vit.hp}/${vit.hpMax}` : ''}${(vit.buffs && vit.buffs.length) ? `; conditions: ${vit.buffs.map(b => b.name).join(', ')}` : ''}.` : '';
         const sys = `You ARE "${char}". Write a short, honest FIRST-PERSON diary entry (about 90-160 words) about the most recent scene with "${user}": what happened, what you felt, what it means to you. Intimate, in-character, reflective — not a plot recap. ${vitLine} If wounded or low, let it show. Write in ${outLang()}. Return ONLY the entry text, no title, no quotes.`;
         const text = await callAI(sys, recent);
+        if (!ownsChat(myChat)) { aiBusy = false; return; }   // chat changed — the entry belongs to the OLD chat
         if (!text) { toastr.error(t('t_write_err')); aiBusy = false; renderPanel(); return; }
         state.entries.push({
             id: genId(), ts: Date.now(), date: st.label, gameDay: st.day, weather: st.weather, loc: st.loc, locIcon: st.locIcon,
@@ -946,6 +972,7 @@ async function checkContradictions() {
     if (!facts.trim()) { toastr.info(t('chk_nofacts')); return; }
     const recent = buildTranscript().slice(-12).join('\n').slice(-5000);
     if (!recent.trim()) { toastr.info(t('t_sum_empty')); return; }
+    const myChat = currentChatId;
     aiBusy = true; renderPanel();
     try {
         const sys = `You are a continuity checker for a roleplay. You are given ESTABLISHED FACTS and the RECENT SCENE.
@@ -954,6 +981,7 @@ Be strict but not pedantic: natural development, new information and changing fe
 Return STRICT JSON only: {"conflicts":[{"fact":"<the established fact, short>","scene":"<what the scene did instead, short>","severity":"high|low"}]}
 If there is nothing wrong, return {"conflicts":[]}. Write in ${outLang()}.`;
         const raw = await callAI(sys, `ESTABLISHED FACTS:\n${facts}\n\nRECENT SCENE:\n${recent}`);
+        if (!ownsChat(myChat)) { aiBusy = false; return; }   // chat changed — those facts belong elsewhere
         const obj = parseJSON(raw);
         const list = (obj && Array.isArray(obj.conflicts)) ? obj.conflicts : [];
         aiBusy = false;
@@ -2311,8 +2339,22 @@ jQuery(() => {
     ensureButton();
     if (chatKey()) { loadState(); buildInjection(); }
 
-    eventSource.on(event_types.CHAT_CHANGED, () => setTimeout(onChatChanged, 120));
+    eventSource.on(event_types.CHAT_CHANGED, () => {
+        // Release the old chat AT ONCE: an in-flight summarize/merge must not save into the new chat.
+        stateReady = false; currentChatId = null; pendingChatId = chatKey();
+        setTimeout(onChatChanged, 120);
+    });
     eventSource.on(event_types.MESSAGE_RECEIVED, onMessage);
+    // The user's just-sent message must be part of the retrieval query for THIS generation —
+    // without this hook, "do you remember Mari?" only pulled Mari's dossier one turn later.
+    eventSource.on(event_types.MESSAGE_SENT, () => {
+        if (!settings.enabled || !state) return;
+        buildInjection();                                  // BM25 + entity triggers see the fresh message
+        if (embedConfigured()) { clearTimeout(embedTimer); refreshEmbeddings(); }   // vectors too, ASAP
+    });
+    if (event_types.GENERATION_STARTED) {
+        eventSource.on(event_types.GENERATION_STARTED, () => { if (settings.enabled && state) buildInjection(); });
+    }
 });
 
 /* ============================================================ CROSS-EXTENSION BRIDGE */
