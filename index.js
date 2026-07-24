@@ -314,7 +314,8 @@ function freshState() {
     return { author: '', entries: [], events: [], npcs: [], locations: [], gifts: [], glossary: [], notes: '', summary: '', memoryLocked: false, pendingMemory: '', carriedDossier: '', archiveScenes: [], bond: null, summaries: [], summarizedCount: 0, lastSummaryDay: null, meta: { created: Date.now() } };
 }
 function loadState() {
-    const chatId = pendingChatId || chatKey();
+    // an explicit external diary always wins over a pending chat switch
+    const chatId = externalKey || pendingChatId || chatKey();
     if (!chatId) { currentChatId = null; pendingChatId = null; stateReady = false; state = freshState(); return; }
     currentChatId = chatId; pendingChatId = null; stateReady = true;
     if (settings.chatStates[chatId]) {
@@ -338,7 +339,30 @@ function saveState(immediate = true) {
 
 /* ============================================================ HELPERS */
 function genId() { return Math.random().toString(36).slice(2, 9); }
-function chatKey() { const c = getContext(); return c.chatId || (c.groupId ? 'group_' + c.groupId : (c.selected_group ? 'group_' + c.selected_group : null)); }
+// An outside extension can own a diary "chat" of its own — e.g. RPG Phone keeps a
+// separate diary per phone conversation. While externalKey is set, the whole extension
+// (state, panel, saving, memory) works on THAT diary instead of the open chat's one.
+let externalKey = null;
+let externalLabel = '';
+// key -> () => string[] : the owner of an external diary supplies its own transcript,
+// so summarizing / writing entries inside the book works on THAT conversation
+const extSources = {};
+function externalLines() {
+    if (!externalKey) return null;
+    const fn = extSources[externalKey];
+    if (typeof fn !== 'function') return null;
+    try {
+        const r = fn();
+        if (Array.isArray(r)) return r.filter(Boolean).map(String);
+        if (typeof r === 'string' && r.trim()) return r.split('\n').filter(Boolean);
+    } catch (e) { console.error('[Diary] external source error:', e); }
+    return null;
+}
+function isExternal() { return !!externalKey; }
+function chatKey() {
+    if (externalKey) return externalKey;
+    const c = getContext(); return c.chatId || (c.groupId ? 'group_' + c.groupId : (c.selected_group ? 'group_' + c.selected_group : null));
+}
 function escapeHtml(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 function clamp(n, lo, hi) { n = parseInt(n); if (!isFinite(n)) n = lo; return Math.max(lo, Math.min(hi, n)); }
 function locIconFor(name, given) {
@@ -556,6 +580,8 @@ function cosineRetrieve(chunks, topK) {
 
 /* ============================================================ TRANSCRIPT + SUMMARIZE */
 function buildTranscript() {
+    const ext = externalLines();      // viewing an external diary: summarize ITS conversation
+    if (ext) return ext;
     const ctx = getContext();
     const chat = ctx.chat || [];
     const out = [];
@@ -1258,6 +1284,9 @@ function formatChunk(c) {
 }
 function buildInjection() {
     const clear = () => setExtensionPrompt(PROMPT_KEY, '', 2, 0, false, extension_prompt_roles.SYSTEM);
+    // An external diary (e.g. a phone conversation) belongs to another extension's
+    // context — its memory must never be injected into the open chat's prompt.
+    if (isExternal()) return;
     if (!settings.enabled || !state) { clear(); return; }
     // Collect-only mode: keep writing the diary, but inject nothing into the prompt.
     if (settings.injectMemory === false) { clear(); return; }
@@ -2110,6 +2139,10 @@ function openModal() {
 function closeModal() {
     const m = document.getElementById('rpg-diary-modal'); if (m) m.classList.remove('visible');
     editing = null;
+    if (externalKey) {            // back to this chat's own diary
+        externalKey = null; externalLabel = '';
+        if (chatKey()) { loadState(); buildInjection(); }
+    }
 }
 
 /* ============================================================ IMPORT / EXPORT */
@@ -2340,20 +2373,22 @@ jQuery(() => {
     if (chatKey()) { loadState(); buildInjection(); }
 
     eventSource.on(event_types.CHAT_CHANGED, () => {
+        // leaving the chat also leaves any external diary view
+        externalKey = null; externalLabel = '';
         // Release the old chat AT ONCE: an in-flight summarize/merge must not save into the new chat.
         stateReady = false; currentChatId = null; pendingChatId = chatKey();
         setTimeout(onChatChanged, 120);
     });
-    eventSource.on(event_types.MESSAGE_RECEIVED, onMessage);
+    eventSource.on(event_types.MESSAGE_RECEIVED, (id) => { if (isExternal()) return; onMessage(id); });
     // The user's just-sent message must be part of the retrieval query for THIS generation —
     // without this hook, "do you remember Mari?" only pulled Mari's dossier one turn later.
     eventSource.on(event_types.MESSAGE_SENT, () => {
-        if (!settings.enabled || !state) return;
+        if (!settings.enabled || !state || isExternal()) return;
         buildInjection();                                  // BM25 + entity triggers see the fresh message
         if (embedConfigured()) { clearTimeout(embedTimer); refreshEmbeddings(); }   // vectors too, ASAP
     });
     if (event_types.GENERATION_STARTED) {
-        eventSource.on(event_types.GENERATION_STARTED, () => { if (settings.enabled && state) buildInjection(); });
+        eventSource.on(event_types.GENERATION_STARTED, () => { if (settings.enabled && state && !isExternal()) buildInjection(); });
     }
 });
 
@@ -2379,5 +2414,58 @@ window.RPG.diary = {
     revealLocation: (name) => { if (!state) return; const l = state.locations.find(x => x.name.toLowerCase() === String(name).toLowerCase()); if (l) { l.known = true; saveState(); buildInjection(); } },
     getSummary: () => state ? (state.summary || '') : '',
     summarizeNow: () => summarizeChat(),
-    refresh: () => { loadState(); buildInjection(); }
+    refresh: () => { loadState(); buildInjection(); },
+
+    /* ---- external diaries: a separate diary "chat" owned by another extension ---- */
+    supportsExternal: true,
+    // register the transcript of an external diary (called by its owner extension)
+    setExternalSource: (key, fn) => { if (key) { if (typeof fn === 'function') extSources[key] = fn; else delete extSources[key]; } },
+    hasExternal: (key) => !!(settings.chatStates && settings.chatStates[key]),
+    // create the diary if it does not exist yet; `seed` may carry {author, label}
+    ensureExternal: (key, seed) => {
+        if (!key) return false;
+        if (!settings.chatStates) settings.chatStates = {};
+        if (!settings.chatStates[key]) {
+            const st = freshState();
+            if (seed && seed.author) st.author = String(seed.author);
+            st.meta = st.meta || {};
+            st.meta.external = true;
+            st.meta.label = (seed && seed.label) || key;
+            settings.chatStates[key] = st;
+            saveSettings(true);
+        }
+        return true;
+    },
+    // open the book ON that diary (the panel, the tabs, everything — as for any chat)
+    openExternal: (key, label, seed) => {
+        if (!settings.enabled || !key) return false;
+        window.RPG.diary.ensureExternal(key, Object.assign({ label }, seed || {}));
+        externalKey = key; externalLabel = label || key;
+        pendingChatId = null;          // do not inherit a queued chat switch
+        loadState();
+        openModal();
+        return true;
+    },
+    closeExternal: () => { closeModal(); },
+    // write into an external diary without opening it
+    addEntryTo: (key, e) => {
+        if (!key) return null;
+        window.RPG.diary.ensureExternal(key, e && e.seed);
+        const target = settings.chatStates[key];
+        if (!target) return null;
+        if (!Array.isArray(target.entries)) target.entries = [];
+        const d = new Date();
+        const item = {
+            id: genId(), ts: Date.now(),
+            date: (e && e.date) || (d.toLocaleDateString() + ', ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0')),
+            loc: (e && e.loc) || '', weather: '', locIcon: '', mood: (e && e.mood) || '',
+            tags: (e && Array.isArray(e.tags)) ? e.tags.map(String) : [],
+            text: String((e && e.text) || ''), source: (e && e.source) || 'external'
+        };
+        target.entries.push(item);
+        saveSettings(true);
+        if (externalKey === key) { loadState(); renderPanel(); }
+        return item.id;
+    },
+    getExternal: (key) => (settings.chatStates && settings.chatStates[key]) || null
 };
