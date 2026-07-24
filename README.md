@@ -200,21 +200,3 @@ window.RPG.diary.revealLocation('Whispering Woods')
 window.RPG.diary.getSummary()     // this chat's memory text
 window.RPG.diary.summarizeNow()   // run a summarization
 ```
-
----
-
-## Troubleshooting
-
-- **The summary reads like the character talking and skips the plot.** Fixed in 1.5.0 — the summarizer is
-  forced to write a neutral, third-person factual dossier: disguises, confinements, faintings *and their
-  cause*, debts and how they were incurred, permissions, plans. Press **⟲** once on an older chat to rebuild.
-- **Updating an NPC lost older details.** Fixed in 1.8.0 — the existing dossier is shown to the AI and fields
-  merge additively.
-- **A new chat only got a summary, not the events/NPCs/gifts.** Fixed in 2.4.0 — **⇥ Continue from…** now copies
-  the full structured dossier into the new chat's book.
-- **"How you met" just said "Yes".** Fixed in 1.7.0 — the JSON field was `met`, which the model read as a
-  yes/no question; it's now `how_met`, and bare yes/no answers are rejected.
-- **Long notes were cut off / location icons overlapped the heading / memory rows were unclickable.** Fixed in
-  1.6.1–1.9.0 (scrolling detail pages, non-shrinking headers, checkboxes no longer styled as text fields).
-- **The character went cold again.** Check the drift graph on their card. Press **⟲**, 📌 the key facts, and make
-  sure *Feed memory to the AI* is on.
