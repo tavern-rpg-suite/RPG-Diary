@@ -428,6 +428,13 @@ function readScene() {
     return null;
 }
 function currentStamp() {
+    // An external diary (phone conversation etc.) does not live in the open chat's scene:
+    // its entries must not be stamped with the CHAT's Scene Card day/weather/location.
+    // They get a plain real-world timestamp instead (same as addEntryTo), unless the
+    // caller supplies an explicit date of its own.
+    if (isExternal() || (state && state.meta && state.meta.external)) {
+        return { label: nowLabel(), day: null, weather: '', loc: '', locIcon: 'pin', source: 'system' };
+    }
     const sc = readScene();
     if (sc && (sc.label || sc.day != null || sc.loc)) {
         const label = sc.label || (sc.day != null ? `${t('day_word')} ${sc.day}` : nowLabel());
@@ -558,7 +565,10 @@ async function refreshEmbeddings() {
             let i = 0;
             for (const k of vecCache.keys()) { vecCache.delete(k); if (++i >= drop) break; }   // Map keeps insertion order → oldest first
         }
-        // 2) embed the current query (recent messages + location)
+        // 2) embed the current query (recent messages + location).
+        // Skip while an external diary is open: its transcript is the PHONE conversation, and a query
+        // vector built from it would skew the main chat's retrieval after the book is closed.
+        if (isExternal()) { embedWorking = false; return; }
         if (!ownsChat(myChat)) { embedWorking = false; return; }   // switched chats: keep the chunk cache, skip the query
         const q = buildTranscript().slice(-6).join(' ') + ' ' + (readScene() && readScene().loc || '');
         if (q.trim()) { const qv = await embed([q.slice(0, 4000)]); if (qv && qv[0] && ownsChat(myChat)) lastQueryVec = qv[0]; }
@@ -726,8 +736,12 @@ async function summarizeChat(force) {
 
         const rawJson = await callAI(dossierPrompt(), notes);
         if (!ownsChat(myChat)) { aiBusy = false; return; }   // never apply the old chat's memory to a new chat
-        const obj = parseJSON(rawJson) || {};
-        if (rawJson && !/}\s*$/.test(rawJson.trim())) toastr.warning(t('t_sum_trunc'), '', { timeOut: 14000 });
+        const parsed = parseJSON(rawJson);
+        const obj = parsed || {};
+        // The truncation warning used to check whether the RAW reply ends with "}" — but models often
+        // wrap the JSON in ```-fences or add a trailing line, so it cried wolf after every perfectly
+        // good summarize. Now it only fires when the reply genuinely failed to parse.
+        if (rawJson && !parsed && !/}\s*$/.test(rawJson.trim())) toastr.warning(t('t_sum_trunc'), '', { timeOut: 14000 });
         if (memText) obj.memory = memText;
 
         if (!coerceText(obj.memory) && !obj.events && !obj.npcs) { toastr.error(t('t_sum_err')); aiBusy = false; renderPanel(); return; }
@@ -747,6 +761,10 @@ async function summarizeChat(force) {
 // locked or the AI returned none, so a chat can never become invisible to Merge / Continue-from.
 function saveToLibrary(autoTitleRaw) {
     if (!state) return false;
+    // External diaries (phone conversations etc.) are not chat memories: in the library they would
+    // wear the open chat's character name and could be pulled into a chat by mistake. They stay
+    // reachable in Continue-from via the chat-states scan, clearly labeled as external.
+    if (isExternal() || (state.meta && state.meta.external)) return false;
     const text = (state.summary || '').trim();
     const hasDossier = state.events.length || state.npcs.length || state.gifts.length;
     if (!text && !hasDossier) return false;                 // truly nothing to save yet
@@ -1238,6 +1256,9 @@ function buildSceneArchive() {
 }
 function updateCarry() {
     if (!state || !settings.carryOver) return;
+    // NEVER let an external diary (e.g. a phone conversation) become the carry-over:
+    // it would be labeled with the open chat's character and silently inherited by new chats.
+    if (isExternal() || (state.meta && state.meta.external)) return;
     const mem = (state.summary || '').trim();
     if (!mem) return; // never overwrite a good carry-over with an empty one
     settings.carry = { summary: mem, dossier: dossierDigest(state), data: snapshotDossier(), scenes: settings.carryScenes ? buildSceneArchive() : [], ts: Date.now(), char: getContext().name2 || '', from: chatKey() || '' };
@@ -1283,7 +1304,12 @@ function formatChunk(c) {
     return `• ${pin}${when}${typeTag(c.type)}${body}`;
 }
 function buildInjection() {
-    const clear = () => setExtensionPrompt(PROMPT_KEY, '', 2, 0, false, extension_prompt_roles.SYSTEM);
+    // 'both' mode uses a second prompt key for the top-of-context copy; both keys are cleared together
+    const TOP_KEY = PROMPT_KEY + '_top';
+    const clear = () => {
+        setExtensionPrompt(PROMPT_KEY, '', 2, 0, false, extension_prompt_roles.SYSTEM);
+        setExtensionPrompt(TOP_KEY, '', 2, 0, false, extension_prompt_roles.SYSTEM);
+    };
     // An external diary (e.g. a phone conversation) belongs to another extension's
     // context — its memory must never be injected into the open chat's prompt.
     if (isExternal()) return;
@@ -1329,8 +1355,16 @@ function buildInjection() {
     // respect "inject on new chat" only for this chat's own diary; carried memory is meant for new chats
     if (chatIsNew() && settings.injectOnNew === false && !settings.ragToggle && !carried) { clear(); return; }
     const text = `\n[${t('inj_wrap')} — ${t('inj_hint')}]\n${blocks.join('\n\n')}\n[/${t('inj_wrap')}]\n`;
-    const depth = (settings.injectMode === 'top' || settings.injectMode === 'both') ? 9999 : (settings.injectDepth || 4);
-    setExtensionPrompt(PROMPT_KEY, text, 2, depth, false, extension_prompt_roles.SYSTEM);
+    if (settings.injectMode === 'both') {
+        // "both" was previously identical to "top" (a single call can only take one depth) — now the
+        // memory really goes to BOTH places: a header at the start AND a reminder near the recent turns.
+        setExtensionPrompt(PROMPT_KEY, text, 2, settings.injectDepth || 4, false, extension_prompt_roles.SYSTEM);
+        setExtensionPrompt(TOP_KEY, text, 2, 9999, false, extension_prompt_roles.SYSTEM);
+    } else {
+        setExtensionPrompt(TOP_KEY, '', 2, 0, false, extension_prompt_roles.SYSTEM);
+        const depth = (settings.injectMode === 'top') ? 9999 : (settings.injectDepth || 4);
+        setExtensionPrompt(PROMPT_KEY, text, 2, depth, false, extension_prompt_roles.SYSTEM);
+    }
 }
 
 /* ============================================================ UI STATE */
@@ -1720,9 +1754,11 @@ function carrySources() {
         if (!st) continue;
         const size = (st.entries || []).length + (st.events || []).length + (st.npcs || []).length + ((st.notes || '').trim() ? 1 : 0);
         if (!size) continue;
+        const isExt = !!(st.meta && st.meta.external);
+        const label = (st.meta && st.meta.label) || '';
         lib.push({
             src: 'chat', id: 'chat:' + key, srcChat: key, ts: (st.meta && st.meta.created) || 0,
-            title: (st.author || '') + (st.author ? ' · ' : '') + t('cont_unsummarized'),
+            title: (isExt ? '📱 ' + (label || key) : (st.author || '') + (st.author ? ' · ' : '') + t('cont_unsummarized')),
             char: st.author || '', chat: key,
             text: (st.summary || '').trim() || t('cont_diary_only', { e: (st.entries || []).length, v: (st.events || []).length, n: (st.npcs || []).length })
         });
@@ -2141,7 +2177,8 @@ function closeModal() {
     editing = null;
     if (externalKey) {            // back to this chat's own diary
         externalKey = null; externalLabel = '';
-        if (chatKey()) { loadState(); buildInjection(); }
+        lastQueryVec = null;      // drop the phone-conversation query vector; the next message rebuilds it
+        if (chatKey()) { loadState(); buildInjection(); scheduleEmbed(); }
     }
 }
 
