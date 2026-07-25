@@ -1064,8 +1064,16 @@ function chatIsNew() {
 /* ---- RAG: smart retrieval (BM25) over ALL memory, date-forward ---- */
 const STOPWORDS = new Set(('the and for that with was were has had have his her she him you your they them this from but not are and of to in on it is as at be or an a ' +
     'по что как это был была были быть его ему её они их для так вот уже или же над под при без the a но да нет там тут этот эта они мы вы я ты').split(/\s+/));
+// Light stemming so "пожар" matches "пожара"/"пожаре": Russian case endings used to make BM25
+// miss entries referenced in a different inflection. Query and documents go through the same cut.
+const TOK_GRAM = ['ического', 'ическая', 'ически', 'ами', 'ями', 'ого', 'ому', 'ыми', 'ими', 'ies', 'ах', 'ях', 'ов', 'ев', 'ей', 'ой', 'ый', 'ий', 'ая', 'яя', 'ое', 'ее', 'ые', 'ие', 'ым', 'им', 'ых', 'их', 'ом', 'ем', 'ую', 'юю', 'ся', 'es', 'а', 'я', 'ы', 'и', 'у', 'ю', 'е', 'о', 'ь', 'й', 's'];
+function tokStem(w) {
+    if (w.length <= 3) return w;
+    for (const s of TOK_GRAM) if (w.length - s.length >= 3 && w.endsWith(s)) return w.slice(0, -s.length);
+    return w;
+}
 function tok(s) {
-    return String(s || '').toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/).filter(w => w.length >= 3 && !STOPWORDS.has(w));
+    return String(s || '').toLowerCase().replace(/ё/g, 'е').replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/).filter(w => w.length >= 3 && !STOPWORDS.has(w)).map(tokStem);
 }
 /* ---- raw-scene index: lets the character recall the ACTUAL scene, not just the summary ---- */
 function sceneStampFor(chat, i) {
@@ -1345,7 +1353,11 @@ function buildInjection() {
     const { char } = names();
     if (state.bond && typeof state.bond.trust === 'number')
         anchorList.push(`${char}: ${state.bond.trust}/100${state.bond.status ? ' — ' + state.bond.status : ''}`);
-    for (const n of state.npcs) if (typeof n.trust === 'number' && n.trust >= 50) anchorList.push(`${n.name}: ${n.trust}/100`);
+    // Anchors were unbounded: with 100+ NPCs every one at trust>=50 added a line to EVERY message.
+    // Keep the main bond plus the strongest 10 NPC bonds — the ones most worth protecting from regression.
+    const anchorNpcs = state.npcs.filter(n => typeof n.trust === 'number' && n.trust >= 50)
+        .sort((a, b) => b.trust - a.trust).slice(0, 10);
+    for (const n of anchorNpcs) anchorList.push(`${n.name}: ${n.trust}/100`);
     if (anchorList.length) blocks.push(`${t('inj_anchor_head')}\n${anchorList.join('; ')}\n${t('inj_anchor_note')}`);
     const extras = retrieveMemory();
     if (extras) blocks.push(`${t('inj_diary_head')}\n${extras}`);
