@@ -6,10 +6,17 @@ The extension helps the AI character keep first-person diary entries and automat
 
 Part of the **Tavern RPG Suite**. It integrates with `window.RPG.vitals` (health/conditions) and `window.RPG.scene` (in-game date, time, weather, location) when those modules are installed.
 
-**Current Version:** 3.8.8
+**Current Version:** 3.8.9
 
 ---
+## ✨ Screenshots
+<img width="756" height="547" alt="Screenshot_7" src="https://github.com/user-attachments/assets/4498d442-56b1-4d28-ac4a-a16665297236" />
+<img width="780" height="546" alt="Screenshot_1" src="https://github.com/user-attachments/assets/f62f28fe-a78c-48e1-8b5d-e01f195ccae4" />
+<img width="763" height="542" alt="Screenshot_3" src="https://github.com/user-attachments/assets/7e0e3837-b99b-4206-a43e-ffa97447c09b" />
+<img width="749" height="544" alt="Screenshot_4" src="https://github.com/user-attachments/assets/fadaed4b-dbc2-42d7-b46c-32876b0da9e7" />
+<img width="768" height="547" alt="Screenshot_5" src="https://github.com/user-attachments/assets/914f0c83-6e05-46c0-a61e-b8e0285555f1" />
 
+---
 ## 🚀 Installation
 
 ### How to Install
