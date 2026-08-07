@@ -156,7 +156,10 @@
 #rpg-diary-root .rd-fade::-webkit-scrollbar { width:7px; }
 #rpg-diary-root .rd-fade::-webkit-scrollbar-thumb { background:var(--oxblood); border-radius:5px; }
 #rpg-diary-root .rd-fade::-webkit-scrollbar-track { background:transparent; }
-@keyframes rd-fade { from{opacity:0;transform:translateY(6px);} to{opacity:1;transform:none;} }
+/* Opacity only. The 6px slide moved the whole card, and the paperclip is pinned to
+   its top edge at -8px — so on every switch it visibly jumped and then settled. The
+   fade still reads as a page change without anything physically moving. */
+@keyframes rd-fade { from{opacity:0;} to{opacity:1;} }
 #rpg-diary-root .rd-locked { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:var(--sepia); }
 #rpg-diary-root .rd-locked .rd-q { font-family:"Caveat","Ink Free","Segoe Script","Bradley Hand","Brush Script MT",cursive; font-size:80px; color:var(--gold); opacity:.5; line-height:1; }
 #rpg-diary-root .rd-locked p { font-style:italic; font-size:15px; max-width:210px; }
@@ -304,3 +307,31 @@
 /* locked-memory draft card */
 #rpg-diary-root .rd-draft { flex:none; margin-top:8px; background:#f3e9d2; border:1px dashed var(--gold); border-radius:8px; padding:8px 10px; }
 #rpg-diary-root .rd-draft-t { font-family:"Alegreya","Palatino Linotype","Book Antiqua",Palatino,Georgia,serif; font-size:12.5px; line-height:1.45; color:var(--ink-soft); margin:4px 0 2px; }
+
+/* ============================================================
+   MEMORY PAGE ONLY
+   The saved library and the version history are two lists sharing one page,
+   and only that page. Nothing here touches .rd-pad, .rd-listcol or any other
+   shared rule: the other tabs are single lists that already worked, and the
+   page container must stay exactly as it was — making it scroll moved the
+   paperclip and shifted the layout on every tab switch.
+   ============================================================ */
+#rpg-diary-root .rd-libcol { flex:0 1 auto; min-height:96px; max-height:42%; }
+#rpg-diary-root .rd-vercol {
+    flex:0 1 auto; min-height:104px; max-height:38%;
+    overflow-y:auto; padding-right:6px;
+    scrollbar-width:thin; scrollbar-color:var(--page-edge) transparent;
+}
+#rpg-diary-root .rd-libcol::-webkit-scrollbar,
+#rpg-diary-root .rd-vercol::-webkit-scrollbar { width:7px; }
+#rpg-diary-root .rd-libcol::-webkit-scrollbar-track,
+#rpg-diary-root .rd-vercol::-webkit-scrollbar-track { background:transparent; }
+#rpg-diary-root .rd-libcol::-webkit-scrollbar-thumb,
+#rpg-diary-root .rd-vercol::-webkit-scrollbar-thumb { background:var(--page-edge); border-radius:5px; }
+#rpg-diary-root .rd-libcol:hover::-webkit-scrollbar-thumb,
+#rpg-diary-root .rd-vercol:hover::-webkit-scrollbar-thumb { background:var(--sepia); }
+#rpg-diary-root .rd-libcol { scrollbar-width:thin; scrollbar-color:var(--page-edge) transparent; }
+@media (max-height: 620px) {
+    #rpg-diary-root .rd-libcol { max-height:34%; min-height:76px; }
+    #rpg-diary-root .rd-vercol { max-height:34%; min-height:82px; }
+}

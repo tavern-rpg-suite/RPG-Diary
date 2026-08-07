@@ -449,16 +449,59 @@ function nowLabel() {
 }
 
 /* ============================================================ AI */
+
+/* ------------------------------------------------------------
+   BORROWED CREDENTIALS
+   The other modules of the suite already hold a key. Rather than make you
+   paste the same one into every panel, an empty field here falls back to a
+   sibling's — first come, first served, in the order below.
+
+   Own settings win only when BOTH key and model are filled: a key without a
+   model, or a model without a key, cannot make a request on its own, and
+   half-borrowing would silently send requests to the wrong endpoint.
+
+   This changes nothing about WHAT is sent or HOW anything is summarised — it
+   is only where the credentials come from.
+   ------------------------------------------------------------ */
+const KEY_SOURCES = ['tavern_rpg_engine', 'rpg_phone', 'rpg_map_engine', 'rpg_map', 'rpg_dungeons', 'tavern_bonds_engine', 'rpg_codex', 'tavern_doors'];
+function apiConf() {
+    const mine = { url: settings.baseUrl, key: settings.apiKey, model: settings.model, from: null };
+    if (mine.key && mine.model) return mine;
+    for (const src of KEY_SOURCES) {
+        if (src === MODULE_NAME) continue;
+        try {
+            const x = extension_settings[src];
+            if (x && x.apiKey && x.model) return { url: x.baseUrl, key: x.apiKey, model: x.model, from: src };
+        } catch (e) { /* a neighbour with broken settings must not break the diary */ }
+    }
+    return mine;
+}
+function apiKey() { return apiConf().key || ''; }
+function apiUrl() { return apiConf().url || settings.baseUrl || 'https://openrouter.ai/api/v1'; }
+function apiModel() { return apiConf().model || settings.model || ''; }
+function borrowedFrom() { return apiConf().from; }
+const SRC_LABEL = { tavern_rpg_engine: 'Tavern RPG Engine', rpg_phone: 'Телефон', rpg_map_engine: 'Карта', rpg_map: 'Карта', rpg_dungeons: 'Кроличья нора', tavern_bonds_engine: 'Отношения', rpg_codex: 'Книга', tavern_doors: 'Двери' };
+function refreshBorrowNote() {
+    const row = document.getElementById('rpgd-borrow');
+    if (!row) return;
+    const from = borrowedFrom();
+    row.style.display = from ? '' : 'none';
+    const el = row.querySelector('small');
+    if (el && from) el.textContent = (settings.language === 'ru')
+        ? `Поля пусты — ключ и модель берутся из «${SRC_LABEL[from] || from}». Заполни оба поля, чтобы использовать свои.`
+        : `Empty — key and model are taken from "${SRC_LABEL[from] || from}". Fill in both to use your own.`;
+}
+
 async function callAI(systemPrompt, userPrompt, maxTokens) {
-    if (!settings.apiKey) throw new Error('no-key');
-    const url = (settings.baseUrl || 'https://openrouter.ai/api/v1').replace(/\/$/, '') + '/chat/completions';
+    if (!apiKey()) throw new Error('no-key');
+    const url = (apiUrl() || 'https://openrouter.ai/api/v1').replace(/\/$/, '') + '/chat/completions';
     for (let i = 0; i < 2; i++) {
         try {
             const res = await fetch(url, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${settings.apiKey.trim()}`, 'Content-Type': 'application/json' },
+                headers: { 'Authorization': `Bearer ${apiKey().trim()}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    model: settings.model,
+                    model: apiModel(),
                     messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
                     temperature: typeof settings.temperature === 'number' ? settings.temperature : 0.7,
                     max_tokens: maxTokens || (parseInt(settings.maxTokens) || 16000)
@@ -499,7 +542,7 @@ const vecCache = new Map();   // key `${chunkId}:${hash}` -> Float array. In-mem
 let lastQueryVec = null, embedBusy = false, embedTimer = null, embedWorking = false;
 function vecKey(c) { return 'h' + hashText(String(c.text || '') + '|' + String(c.extra || '')); }
 function hashText(s) { let h = 0; s = String(s || ''); for (let i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) | 0; } return h; }
-function embedConfigured() { return settings.useEmbeddings && !!(settings.embedUrl || settings.baseUrl) && !!(settings.embedKey || settings.apiKey); }
+function embedConfigured() { return settings.useEmbeddings && !!(settings.embedUrl || apiUrl()) && !!(settings.embedKey || apiKey()); }
 async function testEmbeddings() {
     const btn = document.getElementById('rpgd-embtest');
     if (btn) { btn.disabled = true; btn.textContent = '…'; }
@@ -514,8 +557,8 @@ async function testEmbeddings() {
     if (btn) { btn.disabled = false; btn.textContent = t('embed_test'); }
 }
 async function embed(texts) {
-    const url = ((settings.embedUrl || settings.baseUrl) || '').replace(/\/$/, '') + '/embeddings';
-    const key = (settings.embedKey || settings.apiKey || '').trim();
+    const url = ((settings.embedUrl || apiUrl()) || '').replace(/\/$/, '') + '/embeddings';
+    const key = (settings.embedKey || apiKey() || '').trim();
     const res = await fetch(url, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
@@ -698,7 +741,7 @@ function dossierPrompt() {
 let aiBusy = false;
 async function summarizeChat(force) {
     if (aiBusy) return;
-    if (!settings.apiKey) { toastr.warning(t('t_need_key')); return; }
+    if (!apiKey()) { toastr.warning(t('t_need_key')); return; }
     const allLines = buildTranscript();
     if (!allLines.length) { toastr.info(t('t_sum_empty')); return; }
     const already = state.summarizedCount || 0;
@@ -925,7 +968,7 @@ function mergeGlossary(arr) {
 }
 async function mergeSummaries(texts, sources) {
     if (aiBusy) return;
-    if (!settings.apiKey) { toastr.warning(t('t_need_key')); return; }
+    if (!apiKey()) { toastr.warning(t('t_need_key')); return; }
     const clean = (texts || []).map(s => String(s || '').trim()).filter(Boolean);
     if (clean.length < 2) { toastr.info(t('t_merge_need2')); return; }
     const myChat = currentChatId;
@@ -969,7 +1012,7 @@ Reconcile overlaps, keep every distinct fact, and CLARIFY vague references: if a
 /* ============================================================ AI DIARY ENTRY */
 async function generateEntry() {
     if (aiBusy) return;
-    if (!settings.apiKey) { toastr.warning(t('t_need_key')); return; }
+    if (!apiKey()) { toastr.warning(t('t_need_key')); return; }
     const lines = buildTranscript();
     if (!lines.length) { toastr.info(t('t_sum_empty')); return; }
     const myChat = currentChatId;
@@ -1011,7 +1054,7 @@ function keyFactsForCheck() {
 }
 async function checkContradictions() {
     if (aiBusy) return;
-    if (!settings.apiKey) { toastr.warning(t('t_need_key')); return; }
+    if (!apiKey()) { toastr.warning(t('t_need_key')); return; }
     const facts = keyFactsForCheck();
     if (!facts.trim()) { toastr.info(t('chk_nofacts')); return; }
     const recent = buildTranscript().slice(-12).join('\n').slice(-5000);
@@ -1475,15 +1518,15 @@ function memR() {
     const versBlock = vers.length ? `<div class="rd-rule"></div>
         <div class="rd-eyebrow">${t('mem_versions')} (${vers.length})</div>
         <div class="rd-eyebrow" style="margin:3px 0 6px;color:var(--sepia)">${t('mem_versions_hint')}</div>
-        ${vers.slice(0, 8).map(v => `<div class="rd-lrow" style="cursor:default;align-items:center;margin-bottom:5px">
+        <div class="rd-vercol">${vers.slice(0, 8).map(v => `<div class="rd-lrow" style="cursor:default;align-items:center;margin-bottom:5px">
             <div style="flex:1;min-width:0">
                 <div class="rd-sub">${escapeHtml(new Date(v.ts).toLocaleString())} · ${v.words || (v.text || '').split(/\s+/).length} ${escapeHtml(t('mem_words_short'))}</div>
                 <div style="font-size:12px;color:var(--ink-soft);margin-top:2px">${escapeHtml((v.text || '').slice(0, 70))}…</div>
             </div>
             <button class="rd-mini rpg-d-verrestore" data-id="${v.id}" title="${escapeHtml(t('mem_restore'))}">⟲</button>
-        </div>`).join('')}` : '';
+        </div>`).join('')}</div>` : '';
     if (!lib.length) return head + `<div class="rd-empty">${t('no_library')}</div>` + versBlock + acts;
-    return head + `<div class="rd-listcol">${lib.map(sm => `<div class="rd-lrow" style="cursor:default;align-items:flex-start">
+    return head + `<div class="rd-listcol${versBlock ? ' rd-libcol' : ''}">${lib.map(sm => `<div class="rd-lrow" style="cursor:default;align-items:flex-start">
         <div style="flex:1;min-width:0">
             <div class="rd-nm">${escapeHtml(libTitle(sm))}</div>
             <div class="rd-sub">${libMeta(sm)}</div>
@@ -1559,7 +1602,9 @@ function bondR() {
         ${sparkline(fake)}
         <div class="rd-meta" style="margin-top:6px"><b>${t('bond_peak')}:</b> ${peak}%</div>
         ${b.status ? `<div class="rd-rule"></div><div style="font-size:13.5px;line-height:1.6;font-style:italic">${escapeHtml(b.status)}</div>` : ''}
-        ${b.kind === 'npc' ? `<div class="rd-acts"><button class="rd-btn rpg-d-edit" data-type="npc" data-id="${b.id}">${t('act_edit')}</button></div>` : ''}
+        <div class="rd-acts">${b.kind === 'npc'
+            ? `<button class="rd-btn rpg-d-edit" data-type="npc" data-id="${b.id}">${t('act_edit')}</button>`
+            : `<button class="rd-btn rpg-d-edit" data-type="bond">${t('act_edit')}</button>`}</div>
     </div>`;
 }
 function feedL() {
@@ -1861,6 +1906,22 @@ function memEditForm() {
         <div class="rd-edit"><textarea data-f="summary" style="flex:1;min-height:260px">${escapeHtml(editing.data.summary || '')}</textarea></div>
         <div class="rd-acts"><button class="rd-btn prim rpg-d-savef">${t('act_save')}</button><button class="rd-btn rpg-d-cancelf">${t('act_cancel')}</button></div>`;
 }
+// The main bond had no editor at all: every other row on this page could be corrected
+// by hand, but the one at the top could not. It is stored differently — on state.bond
+// rather than in the npcs array — which is why it was skipped.
+function bondEditForm() {
+    const b = state.bond || {};
+    return `<div class="rd-htitle">${t('tab_bond')}</div><div class="rd-rule"></div>
+        <div class="rd-eyebrow" style="margin-bottom:6px">${escapeHtml(authorName())}</div>
+        <div class="rd-edit">
+            <label>${t('relationship')} (0–100)</label>
+            <input type="number" data-f="trust" min="0" max="100" value="${typeof b.trust === 'number' ? b.trust : ''}">
+            <label>${t('note')}</label>
+            <textarea data-f="status" style="min-height:120px">${escapeHtml(b.status || '')}</textarea>
+        </div>
+        <div class="rd-acts"><button class="rd-btn prim rpg-d-savef">${t('act_save')}</button><button class="rd-btn rpg-d-cancelf">${t('act_cancel')}</button></div>`;
+}
+
 function editForm() {
     const e = editing; if (!e) return '';
     let rows = '';
@@ -1904,9 +1965,21 @@ function renderPanel() {
     if (!root || !state) return;
     document.getElementById('rd-tabs').innerHTML = TABS.map((tb, i) => `<button class="rd-tab ${tb[2]} ${i === tab ? 'on' : ''}" data-t="${i}">${escapeHtml(t(tb[0]))}</button>`).join('');
     const pageL = document.getElementById('rd-pageL'), pageR = document.getElementById('rd-pageR');
+    // Both pages are rebuilt from scratch on every click, which throws the list back
+    // to the top: pick the fortieth NPC and you are returned to the first. Remember
+    // where each scrolling column stood and put it back afterwards.
+    const keepScroll = [];
+    ['.rd-listcol', '.rd-feed', '.rd-grid', '.rd-vercol', '.rd-entry'].forEach(sel => {
+        const el = root.querySelector(sel);
+        if (el && el.scrollTop) keepScroll.push([sel, el.scrollTop]);
+    });
     pageL.innerHTML = buildL();
-    pageR.innerHTML = editing ? (editing.type === 'merge' ? mergeForm() : editing.type === 'continue' ? continueForm() : editing.type === 'alerts' ? alertsForm() : editing.type === 'memory' ? memEditForm() : editForm()) : buildR();
+    pageR.innerHTML = editing ? (editing.type === 'merge' ? mergeForm() : editing.type === 'continue' ? continueForm() : editing.type === 'alerts' ? alertsForm() : editing.type === 'memory' ? memEditForm() : editing.type === 'bond' ? bondEditForm() : editForm()) : buildR();
     if (aiBusy) pageR.insertAdjacentHTML('beforeend', `<div class="rd-busy">…</div>`);
+    keepScroll.forEach(([sel, top]) => {
+        const el = root.querySelector(sel);
+        if (el) el.scrollTop = top;
+    });
     wire();
     renderNav();
 }
@@ -2028,6 +2101,7 @@ function findItem(type, id) {
     return (state[map[type]] || []).find(x => x.id === id);
 }
 function openEditor(type, id) {
+    if (type === 'bond') { editing = { type: 'bond', id: null, data: {} }; renderPanel(); return; }
     let data;
     if (id) { const it = findItem(type, id); data = it ? Object.assign({}, it) : {}; }
     else {
@@ -2051,6 +2125,23 @@ function saveEditor() {
     if (!editing) return;
     if (editing.type === 'memory') { const o = readForm(); state.summary = (o.summary || '').trim(); editing = null; updateCarry(); saveState(); renderPanel(); buildInjection(); toastr.success(t('mem_saved')); return; }
     if (editing.type === 'author') { const o = readForm(); state.author = (o.author || '').trim(); editing = null; saveState(); renderPanel(); buildInjection(); return; }
+    if (editing.type === 'bond') {
+        const o = readForm();
+        if (!state.bond) state.bond = {};
+        if (o.trust !== '' && o.trust != null && !isNaN(parseInt(o.trust))) {
+            const v = clamp(o.trust, 0, 100);
+            if (v !== state.bond.trust) {
+                // The graph is drawn from this history, so a hand edit has to leave a
+                // point in it exactly the way an automatic change does.
+                if (!Array.isArray(state.bond.history)) state.bond.history = (typeof state.bond.trust === 'number') ? [{ v: state.bond.trust, ts: 0, day: null }] : [];
+                state.bond.history.push({ v, ts: Date.now(), day: null });
+                if (state.bond.history.length > 40) state.bond.history = state.bond.history.slice(-40);
+            }
+            state.bond.trust = v;
+        }
+        state.bond.status = (o.status || '').trim();
+        editing = null; saveState(); renderPanel(); buildInjection(); return;
+    }
     const o = readForm(); const type = editing.type;
     const mapArr = { entry: 'entries', evt: 'events', npc: 'npcs', loc: 'locations', gift: 'gifts', gloss: 'glossary' };
     let target = editing.id ? findItem(type, editing.id) : null;
@@ -2158,13 +2249,33 @@ function makeModalDraggable(win, handle) {
         e.preventDefault();
         const r = win.getBoundingClientRect();
         win.style.transform = 'none'; win.style.left = r.left + 'px'; win.style.top = r.top + 'px';
-        let sx = e.clientX, sy = e.clientY;
+        // Reading offsetLeft and writing left/top on every pointer move made the
+        // browser recompute the layout of the whole book twice per mouse movement —
+        // with this much DOM on the page that is what the missing frames were. The
+        // drag now runs on a transform, which the compositor handles without touching
+        // layout at all, and the real position is committed once on release, so
+        // nothing else about the window changes.
+        const baseX = r.left, baseY = r.top;
+        const sx = e.clientX, sy = e.clientY;
+        let tx = 0, ty = 0, raf = 0;
+        win.style.willChange = 'transform';
         try { handle.setPointerCapture(e.pointerId); } catch (_) { }
         handle.onpointermove = (ev) => {
-            const dx = ev.clientX - sx, dy = ev.clientY - sy; sx = ev.clientX; sy = ev.clientY;
-            win.style.left = (win.offsetLeft + dx) + 'px'; win.style.top = (win.offsetTop + dy) + 'px';
+            tx = ev.clientX - sx; ty = ev.clientY - sy;
+            if (!raf) raf = requestAnimationFrame(() => {
+                raf = 0;
+                win.style.transform = `translate3d(${tx}px, ${ty}px, 0)`;
+            });
         };
-        handle.onpointerup = () => { handle.onpointermove = null; handle.onpointerup = null; try { handle.releasePointerCapture(e.pointerId); } catch (_) { } };
+        handle.onpointerup = () => {
+            if (raf) { cancelAnimationFrame(raf); raf = 0; }
+            win.style.transform = 'none';
+            win.style.left = (baseX + tx) + 'px';
+            win.style.top = (baseY + ty) + 'px';
+            win.style.willChange = '';
+            handle.onpointermove = null; handle.onpointerup = null;
+            try { handle.releasePointerCapture(e.pointerId); } catch (_) { }
+        };
     };
 }
 function fitBook() {
@@ -2292,6 +2403,7 @@ function settingsHtml() {
                 <div class="rd-set-row"><label style="min-width:70px">${escapeHtml(t('set_url'))}</label><input id="rpgd-url" class="text_pole" style="flex:1" type="text"></div>
                 <div class="rd-set-row"><label style="min-width:70px">${escapeHtml(t('set_key'))}</label><input id="rpgd-key" class="text_pole" style="flex:1" type="password"></div>
                 <div class="rd-set-row"><label style="min-width:70px">${escapeHtml(t('set_model'))}</label><input id="rpgd-model" class="text_pole" style="flex:1" type="text"></div>
+                <div class="rd-set-row" id="rpgd-borrow" style="display:none"><small style="opacity:.75"></small></div>
                 <div class="rd-set-row"><label style="min-width:70px">${escapeHtml(t('set_temp'))}</label><input id="rpgd-temp" class="text_pole" style="width:70px" type="number" min="0" max="2" step="0.1">
                     <label>${escapeHtml(t('set_maxtok'))}</label><input id="rpgd-maxtok" class="text_pole" style="width:90px" type="number" min="1000" max="64000" step="1000"></div>
                 <div class="rd-set-row" style="font-size:11px;opacity:.75">${escapeHtml(t('set_maxtok_note'))}</div>
@@ -2357,7 +2469,8 @@ function bindSettings() {
     const exAll = document.getElementById('rpgd-exportall'); if (exAll) exAll.onclick = exportAll;
     const imAll = document.getElementById('rpgd-importall'); if (imAll) imAll.onclick = importAll;
     set('rpgd-lang', 'language', 'str'); set('rpgd-outlang', 'outputLang', 'str');
-    set('rpgd-url', 'baseUrl', 'str'); set('rpgd-key', 'apiKey', 'str'); set('rpgd-model', 'model', 'str'); set('rpgd-temp', 'temperature', 'num'); set('rpgd-maxtok', 'maxTokens', 'int');
+    set('rpgd-url', 'baseUrl', 'str'); set('rpgd-key', 'apiKey', 'str'); set('rpgd-model', 'model', 'str');
+    refreshBorrowNote(); set('rpgd-temp', 'temperature', 'num'); set('rpgd-maxtok', 'maxTokens', 'int');
     set('rpgd-injmemory', 'injectMemory', 'check'); set('rpgd-injsummary', 'injectSummary', 'check');
     set('rpgd-injmode', 'injectMode', 'str');
     set('rpgd-injnew', 'injectOnNew', 'check'); set('rpgd-injdiary', 'injectDiary', 'check'); set('rpgd-injfull', 'injectWhenFull', 'check');
@@ -2391,7 +2504,7 @@ function onMessage(id) {
     if (!settings.enabled || !state) return;
     buildInjection();
     scheduleEmbed();
-    if (!settings.apiKey || aiBusy) return;
+    if (!apiKey() || aiBusy) return;
     // Message-count trigger: keeps the memory topped up even without a Scene Card / game calendar.
     const every = Math.max(0, parseInt(settings.autoEvery) || 0);
     if (every > 0) {
