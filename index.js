@@ -464,20 +464,62 @@ function nowLabel() {
    is only where the credentials come from.
    ------------------------------------------------------------ */
 const KEY_SOURCES = ['tavern_rpg_engine', 'rpg_phone', 'rpg_map_engine', 'rpg_map', 'rpg_dungeons', 'tavern_bonds_engine', 'rpg_codex', 'tavern_doors'];
-function apiConf() {
-    const mine = { url: settings.baseUrl, key: settings.apiKey, model: settings.model, from: null };
-    if (mine.key && mine.model) return mine;
+function isLocalEndpoint(url) {
+    const u = String(url || '').toLowerCase();
+    if (!u) return false;
+    return /(^|\/\/)(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|host\.docker\.internal)([:/]|$)/.test(u)
+        || /:(5001|5000|8080|8000|1234|11434|5002)(\/|$)/.test(u)
+        || /192\.168\.|10\.\d+\.|172\.(1[6-9]|2\d|3[01])\./.test(u);
+}
+/* An address you typed always wins. Borrowing used to take the neighbour's URL and
+   model along with the key whenever your own pair was incomplete — so pointing this
+   at LM Studio or KoboldCpp and leaving the key blank (neither needs one) quietly
+   sent every request somewhere else, and it looked like it was working. A local
+   endpoint needs no key, so a placeholder is used rather than a borrowed one. */
+function borrowedRaw() {
     for (const src of KEY_SOURCES) {
         if (src === MODULE_NAME) continue;
         try {
             const x = extension_settings[src];
             if (x && x.apiKey && x.model) return { url: x.baseUrl, key: x.apiKey, model: x.model, from: src };
-        } catch (e) { /* a neighbour with broken settings must not break the diary */ }
+        } catch (e) { /* a neighbour with broken settings must not break us */ }
     }
-    return mine;
+    return { url: '', key: '', model: '', from: null };
+}
+
+/* OpenAI-style backends live under /v1. Leave that off — "http://localhost:1234" —
+   and the request goes to /chat/completions, which LM Studio and KoboldCpp answer
+   with "Unexpected endpoint or method". The segment is added when the address has
+   no version in it at all, so ".../api/v1" and ".../v1" are left exactly as typed. */
+function normalizeBase(url) {
+    let u = String(url || '').trim().replace(/\s+/g, '');
+    if (!u) return u;
+    u = u.replace(/\/+$/, '');
+    u = u.replace(/\/(chat\/completions|completions|images|images\/generations|embeddings)$/i, '');
+    if (!/\/v\d+($|\/)/i.test(u)) u += '/v1';
+    return u;
+}
+
+function apiConf() {
+    const own = String(settings.baseUrl || '').trim();
+    const ownKey = String(settings.apiKey || '').trim();
+    const ownModel = String(settings.model || '').trim();
+    if (own) {
+        const local = isLocalEndpoint(own);
+        const b = (ownKey && ownModel) ? { key: '', model: '', from: null } : borrowedRaw();
+        return {
+            url: own,
+            key: ownKey || (local ? 'local' : b.key),
+            model: ownModel || (local ? '' : b.model),
+            from: ownKey ? null : (local ? null : b.from)
+        };
+    }
+    if (ownKey && ownModel) return { url: '', key: ownKey, model: ownModel, from: null };
+    const b = borrowedRaw();
+    return b.key ? b : { url: '', key: ownKey, model: ownModel, from: null };
 }
 function apiKey() { return apiConf().key || ''; }
-function apiUrl() { return apiConf().url || settings.baseUrl || 'https://openrouter.ai/api/v1'; }
+function apiUrl() { return normalizeBase(apiConf().url) || 'https://openrouter.ai/api/v1'; }
 function apiModel() { return apiConf().model || settings.model || ''; }
 function borrowedFrom() { return apiConf().from; }
 const SRC_LABEL = { tavern_rpg_engine: 'Tavern RPG Engine', rpg_phone: 'Телефон', rpg_map_engine: 'Карта', rpg_map: 'Карта', rpg_dungeons: 'Кроличья нора', tavern_bonds_engine: 'Отношения', rpg_codex: 'Книга', tavern_doors: 'Двери' };
