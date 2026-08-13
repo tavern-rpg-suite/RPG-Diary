@@ -313,11 +313,30 @@ function ownsChat(id) { return !!(stateReady && id && currentChatId === id && ch
 function freshState() {
     return { author: '', entries: [], events: [], npcs: [], locations: [], gifts: [], glossary: [], notes: '', summary: '', memoryLocked: false, pendingMemory: '', carriedDossier: '', archiveScenes: [], bond: null, summaries: [], summarizedCount: 0, lastSummaryDay: null, meta: { created: Date.now() } };
 }
+/* Anything saved under a bare "group_<id>" key was written when every chat in that
+   group shared one diary. It cannot be split apart after the fact — there is no way to
+   tell which entry belonged to which chat — so it is handed to the first group chat
+   that asks for it and left alone otherwise. Nothing is deleted: the old key stays put,
+   and an export still contains it. */
+function adoptLegacyGroupState(chatId) {
+    if (!chatId || !chatId.startsWith('group_') || !chatId.includes('__')) return null;
+    const legacy = 'group_' + chatId.slice(6, chatId.indexOf('__'));
+    const old = settings.chatStates && settings.chatStates[legacy];
+    if (!old || settings.chatStates[chatId]) return null;
+    if (settings.legacyGroupAdopted && settings.legacyGroupAdopted[legacy]) return null;
+    if (!settings.legacyGroupAdopted) settings.legacyGroupAdopted = {};
+    settings.legacyGroupAdopted[legacy] = chatId;
+    console.warn('[RPG Diary] a diary shared by a whole group was moved to', chatId, '- the old copy is kept at', legacy);
+    return JSON.parse(JSON.stringify(old));
+}
+
 function loadState() {
     // an explicit external diary always wins over a pending chat switch
     const chatId = externalKey || pendingChatId || chatKey();
     if (!chatId) { currentChatId = null; pendingChatId = null; stateReady = false; state = freshState(); return; }
     currentChatId = chatId; pendingChatId = null; stateReady = true;
+    const adopted = adoptLegacyGroupState(chatId);
+    if (adopted) { settings.chatStates[chatId] = adopted; saveSettingsDebounced(); }
     if (settings.chatStates[chatId]) {
         state = settings.chatStates[chatId];
         const f = freshState();
@@ -359,9 +378,29 @@ function externalLines() {
     return null;
 }
 function isExternal() { return !!externalKey; }
+/* In a group chat SillyTavern does not always have chatId ready the moment CHAT_CHANGED
+   fires, and the fallback used to be the GROUP id — which is the same for every chat in
+   that group. Two separate stories with the same cast therefore shared one diary, and
+   the second one inherited everything the first had written.
+
+   The group's own record of which chat is open is authoritative, so it is asked first;
+   the bare group id is never used as a key any more. Returning null is safe: loadState
+   simply waits and is called again. */
 function chatKey() {
     if (externalKey) return externalKey;
-    const c = getContext(); return c.chatId || (c.groupId ? 'group_' + c.groupId : (c.selected_group ? 'group_' + c.selected_group : null));
+    const c = getContext();
+    if (c.chatId) return c.chatId;
+    const gid = c.groupId || c.selected_group;
+    if (gid) {
+        try {
+            const g = (c.groups || []).find(x => x && x.id === gid);
+            // chat_id is the file currently open; chats[] is every chat this group has
+            const cid = g && (g.chat_id || (Array.isArray(g.chats) && g.chats.length === 1 ? g.chats[0] : null));
+            if (cid) return 'group_' + gid + '__' + cid;
+        } catch (e) { /* fall through */ }
+        return null;   // do NOT fall back to the group id: it would merge every chat in it
+    }
+    return null;
 }
 function escapeHtml(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 function clamp(n, lo, hi) { n = parseInt(n); if (!isFinite(n)) n = lo; return Math.max(lo, Math.min(hi, n)); }
@@ -2580,7 +2619,9 @@ jQuery(() => {
         // leaving the chat also leaves any external diary view
         externalKey = null; externalLabel = '';
         // Release the old chat AT ONCE: an in-flight summarize/merge must not save into the new chat.
-        stateReady = false; currentChatId = null; pendingChatId = chatKey();
+        stateReady = false; currentChatId = null; pendingChatId = null;
+        // The key is read inside onChatChanged, by which time SillyTavern has settled.
+        // Reading it here caught the PREVIOUS chat's id in group chats.
         setTimeout(onChatChanged, 120);
     });
     eventSource.on(event_types.MESSAGE_RECEIVED, (id) => { if (isExternal()) return; onMessage(id); });
