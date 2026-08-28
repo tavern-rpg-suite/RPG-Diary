@@ -2470,7 +2470,12 @@ function settingsHtml() {
     const opt = (v, cur, label) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${escapeHtml(label)}</option>`;
     return `<div class="rpg-diary-settings">
         <div class="inline-drawer">
-            <div class="inline-drawer-toggle inline-drawer-header"><b>${escapeHtml(t('set_title'))}</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
+            <!-- The icon is a font glyph, exactly as every other extension in the suite
+                 does it: <i class="fa-solid ..."> inherits the theme's text colour, so it
+                 comes out white like its neighbours instead of carrying a colour of its
+                 own. The diary was the only one without it, which is why its row looked
+                 different in the settings list. -->
+            <div class="inline-drawer-toggle inline-drawer-header"><b><i class="fa-solid fa-feather-pointed"></i> ${escapeHtml(t('set_title'))}</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
             <div class="inline-drawer-content">
                 <label class="checkbox_label"><input type="checkbox" id="rpgd-enable"> ${escapeHtml(t('set_enable'))}</label>
                 <div class="rd-set-row"><label>${escapeHtml(t('set_lang'))}</label>
