@@ -1,5 +1,9 @@
 # 📓 RPG Diary & Memory
 
+<p>
+<img width="1774" height="887" alt="b3275182-71c9-4eca-b01e-16618888cb74" src="https://github.com/user-attachments/assets/f3dfde0e-17e2-4c2a-b72e-c717c08e19ed" />
+</p>
+
 An extension for SillyTavern designed to provide your roleplay with **long-term memory** capabilities.
 
 The extension helps the AI character keep first-person diary entries and automatically builds a structured dossier of **events, NPCs, locations, gifts, and glossary terms**. It tracks relationship development over time and feeds this information back to the AI invisibly—helping maintain continuity even after the context window fills up or when starting a brand-new chat.
@@ -7,14 +11,6 @@ The extension helps the AI character keep first-person diary entries and automat
 Part of the **Tavern RPG Suite**. It integrates with `window.RPG.vitals` (health/conditions) and `window.RPG.scene` (in-game date, time, weather, location) when those modules are installed.
 
 **Current Version:** 3.9.0
-
----
-## ✨ Screenshots
-<img width="756" height="547" alt="Screenshot_7" src="https://github.com/user-attachments/assets/4498d442-56b1-4d28-ac4a-a16665297236" />
-<img width="780" height="546" alt="Screenshot_1" src="https://github.com/user-attachments/assets/f62f28fe-a78c-48e1-8b5d-e01f195ccae4" />
-<img width="763" height="542" alt="Screenshot_3" src="https://github.com/user-attachments/assets/7e0e3837-b99b-4206-a43e-ffa97447c09b" />
-<img width="749" height="544" alt="Screenshot_4" src="https://github.com/user-attachments/assets/fadaed4b-dbc2-42d7-b46c-32876b0da9e7" />
-<img width="768" height="547" alt="Screenshot_5" src="https://github.com/user-attachments/assets/914f0c83-6e05-46c0-a61e-b8e0285555f1" />
 
 ---
 ## 🚀 Installation
@@ -140,18 +136,7 @@ Each chat maintains its own isolated diary. To carry progress over to a new chat
 The extension fully supports group chats. The diary is saved per group, and summarization processes messages from all active participants. You can select the primary "focus character" using the edit icon next to the byline on the Diary tab.
 
 ---
-
-## 💻 Cross-Extension Developer Bridge
-
-Other extensions can interface with the diary using the following global methods:
-
-```js
-window.RPG.diary.addEntry({ text, mood, tags, loc })
-window.RPG.diary.addEvent({ title, when, where, who, what })
-window.RPG.diary.addNpc({ name, role, look, how_met, note, trust })
-window.RPG.diary.addGift({ dir:'out'|'in', item, who, when, why })
-window.RPG.diary.addLocation({ name, desc })
-window.RPG.diary.revealLocation('Location Name')
-window.RPG.diary.getSummary()     // Returns current memory text
-window.RPG.diary.summarizeNow()   // Triggers an immediate summary run
-```
+## ✨ Screenshots
+<img width="763" height="542" alt="Screenshot_3" src="https://github.com/user-attachments/assets/7e0e3837-b99b-4206-a43e-ffa97447c09b" />
+<img width="749" height="544" alt="Screenshot_4" src="https://github.com/user-attachments/assets/fadaed4b-dbc2-42d7-b46c-32876b0da9e7" />
+<img width="768" height="547" alt="Screenshot_5" src="https://github.com/user-attachments/assets/914f0c83-6e05-46c0-a61e-b8e0285555f1" />
