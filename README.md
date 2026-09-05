@@ -76,6 +76,7 @@ The **Memory** tab shows exactly what is sent to the AI, including word count an
 ---
 
 ## ❤️ Relationship & Bond Tracking
+<img width="763" height="542" alt="Screenshot_3" src="https://github.com/user-attachments/assets/7e0e3837-b99b-4206-a43e-ffa97447c09b" />
 
 The system tracks relationship metrics over time. 
 * The **bond meter** displays the focus character's trust level and status.
@@ -137,6 +138,6 @@ The extension fully supports group chats. The diary is saved per group, and summ
 
 ---
 ## ✨ Screenshots
-<img width="763" height="542" alt="Screenshot_3" src="https://github.com/user-attachments/assets/7e0e3837-b99b-4206-a43e-ffa97447c09b" />
-<img width="749" height="544" alt="Screenshot_4" src="https://github.com/user-attachments/assets/fadaed4b-dbc2-42d7-b46c-32876b0da9e7" />
-<img width="768" height="547" alt="Screenshot_5" src="https://github.com/user-attachments/assets/914f0c83-6e05-46c0-a61e-b8e0285555f1" />
+
+<img width="1902" height="865" alt="Preview- RPG-Diary" src="https://github.com/user-attachments/assets/927ed929-6b8a-490d-9d65-c016528d6a8f" />
+<img width="1881" height="862" alt="Screenshot_23" src="https://github.com/user-attachments/assets/9731d919-2c47-450f-99e2-41da71bdeb19" />
