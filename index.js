@@ -52,7 +52,7 @@ const I18N = {
         mem_lib: 'Saved memories', mem_lib_h: 'Library', mem_lib_hint: 'Every summarize is archived here. Rename, delete, merge or pull one into this chat.',
         resum_confirm: 'Full re-summarize: re-read the whole chat and rebuild the memory. Your carried-in memory is merged in, not deleted — but hand-edits to the memory text may be rewritten. Continue?',
         tab_bond: 'Bonds', bond_h1: 'Who feels what', no_bond: 'No relationships tracked yet — summarize the chat first.', bond_peak: 'Peak', bond_label: '{name} → YOU', drift: 'RELATIONSHIP DRIFT', drift_warn: 'Cooled sharply: peaked at {peak}%, now {now}%. If the AI regressed the character, press ⟲ or pin the key facts.',
-        inj_here_head: 'Who is here now (from the diary — already true):', inj_here_looks: 'looks', inj_here_met: 'met', inj_here_to: 'toward {user}',
+        inj_here_head: 'Who is here now (from the diary — already true):', inj_here_looks: 'looks', inj_here_met: 'met', inj_here_to: 'toward {user}', inj_here_note: 'notes',
         set_whohere: 'Who is here: full cards of the people in the scene or just mentioned (never cut)',
         inj_anchor_head: 'Established relationship levels (do NOT regress these):', inj_anchor_note: 'These bonds are already earned. Keep the warmth/trust at least at this level unless something in the current scene changes it.',
         stamp_rag: 'ENTRY GATHERED BY RAG', stamp_manual: 'HANDWRITTEN ENTRY', stamp_link: 'LINKED TO ENTRIES & RELATIONSHIPS',
@@ -174,7 +174,7 @@ const I18N = {
         mem_lib: 'Сохранённые памяти', mem_lib_h: 'Библиотека', mem_lib_hint: 'Сюда попадает каждое суммирование. Переименуй, удали, объедини или подтяни в этот чат.',
         resum_confirm: 'Полное пересуммирование: перечитает весь чат и пересоберёт память. Перенесённая память вольётся в неё, а не удалится — но твои ручные правки текста могут быть переписаны. Продолжить?',
         tab_bond: 'Отношения', bond_h1: 'Кто как относится', no_bond: 'Отношения пока не отслеживаются — сначала суммируй чат.', bond_peak: 'Пик', bond_label: '{name} → К ТЕБЕ', drift: 'ДРЕЙФ ОТНОШЕНИЙ', drift_warn: 'Резко охладели: пик {peak}%, сейчас {now}%. Если ИИ откатил персонажа — нажми ⟲ или закрепи ключевые факты.',
-        inj_here_head: 'Кто сейчас рядом (из дневника — это уже правда):', inj_here_looks: 'внешность', inj_here_met: 'знакомство', inj_here_to: 'к {user}',
+        inj_here_head: 'Кто сейчас рядом (из дневника — это уже правда):', inj_here_looks: 'внешность', inj_here_met: 'знакомство', inj_here_to: 'к {user}', inj_here_note: 'заметки',
         set_whohere: 'Кто рядом: полные карточки тех, кто в сцене или только что упомянут (без обрезки)',
         inj_anchor_head: 'Установленный уровень отношений (НЕ откатывать):', inj_anchor_note: 'Эта близость уже заслужена. Держи тепло/доверие не ниже этого уровня, если только сцена прямо этого не меняет.',
         stamp_rag: 'ЗАПИСЬ СОБРАНА RAG', stamp_manual: 'РУЧНАЯ ЗАПИСЬ', stamp_link: 'СВЯЗАНО С ЗАПИСЯМИ И ОТНОШЕНИЯМИ',
@@ -1716,7 +1716,12 @@ function dossierDigest(s0) {
     if (known.length) parts.push((t('tab_loc')) + ' — ' + known.map(l => l.name).join(', '));
     if (s.glossary.length) parts.push((t('tab_gloss')) + ' — ' + s.glossary.map(g => `${g.term}: ${g.def || ''}`).join('; '));
     let out = parts.join('\n');
-    if (out.length > 1600) out = out.slice(0, 1600) + '…';
+    if (out.length > 1600) {
+        // cut at the end of a whole item ("; " or a line), never in the middle of a word
+        const cut = out.slice(0, 1600);
+        const at = Math.max(cut.lastIndexOf('; '), cut.lastIndexOf('\n'));
+        out = (at > 800 ? cut.slice(0, at) : cut.slice(0, cut.lastIndexOf(' '))) + ' …';
+    }
     return out;
 }
 function buildSceneArchive() {
@@ -1841,11 +1846,13 @@ function whoHereCards() {
     return out.sort((a, b) => (b.pin ? 1 : 0) - (a.pin ? 1 : 0) || (b.trust || 0) - (a.trust || 0)).slice(0, 5);
 }
 function npcCard(n, levelShown) {
-    const { user } = names();
     const bits = [];
-    if (n.look) bits.push(`${t('inj_here_looks')}: ${n.look}`);
-    if (n.met) bits.push(`${t('inj_here_met')}: ${n.met}`);
-    if (n.note) bits.push(`${t('inj_here_to', { user })}: ${n.note}`);
+    // "Unknown", "—", "?" say nothing: left out
+    const real = v => { const x = String(v || '').trim(); return x && !/^(unknown|n\/a|none|нет|неизвестно|—|-|\?)\.?$/i.test(x) ? x : ''; };
+    if (real(n.look)) bits.push(`${t('inj_here_looks')}: ${real(n.look)}`);
+    if (real(n.met)) bits.push(`${t('inj_here_met')}: ${real(n.met)}`);
+    // the record's note is often a whole sketch of the person, not only how they treat you: labelled plainly
+    if (real(n.note)) bits.push(`${t('inj_here_note')}: ${real(n.note)}`);
     const lvl = typeof n.trust === 'number' && !levelShown && !bondsTells(n.name) ? ` [${t('relationship').toLowerCase()} ${n.trust}/100]` : '';
     return `• ${n.name}${n.role ? ' — ' + n.role : ''}${lvl}${bits.length ? '. ' + bits.join('. ') : ''}`;
 }
