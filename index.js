@@ -113,6 +113,11 @@ const I18N = {
         // settings
         set_title: 'RPG Diary & Memory',
         set_files_h: 'Saves',
+        mem_compact: 'Compact', mem_compact_hint: 'The same memory in fewer words: repetition and wordiness out, every fact kept. You get a draft to read first; the summary itself is not changed.',
+        mem_compact_busy: 'Compacting the memory…', mem_compact_ready: 'The compacted draft is ready — read it under the memory.', mem_compact_draft: 'Compacted draft',
+        mem_compact_words: '{from} → {to} words', mem_compact_kept: 'Every name and number is still there.', mem_compact_lost: 'Missing from the draft: {list}. Read it before taking it.', mem_compact_read: 'Read the whole draft',
+        mem_compact_fewer: '{n} point(s) fewer than before: one was dropped or two were glued together.', mem_compact_broken: 'A line starts mid-sentence, probably cut in half: {list}.',
+        mem_compact_restored: 'The closing line was missing — put back word for word.', mem_compact_small: 'Less than 15% shorter: this memory has little repetition, compacting gains little.',
         tab_people: 'People', people_h1: 'Who is who', live_h: 'Bonds · right now', live_conflict: 'in conflict with you', live_level: 'level from Bonds', live_now: 'mood',
         set_bondssync: 'With RPG Status Bar + Bonds: show its live relationship on the People page and take its level at each summary',
         set_mergepeople: 'Bonds and NPCs as one tab, "People"', set_send_h: 'What goes to the AI', set_send_note: 'Unticked parts stay in the book; they are just not sent.',
@@ -225,6 +230,11 @@ const I18N = {
         inj_hint: 'Это уже установленная история. Считай эти отношения и события уже истинными; не откатывай персонажей к более холодному/раннему состоянию.',
         set_title: 'RPG Дневник и Память',
         set_files_h: 'Сохранения',
+        mem_compact: 'Утрамбовать', mem_compact_hint: 'Та же память меньшим числом слов: без повторов и лишних слов, все факты на месте. Сначала получаешь черновик; сама сводка не меняется.',
+        mem_compact_busy: 'Утрамбовываю память…', mem_compact_ready: 'Утрамбованный черновик готов — он под памятью.', mem_compact_draft: 'Утрамбованный черновик',
+        mem_compact_words: '{from} → {to} слов', mem_compact_kept: 'Все имена и числа на месте.', mem_compact_lost: 'В черновике нет: {list}. Прочитай, прежде чем брать.', mem_compact_read: 'Прочитать черновик целиком',
+        mem_compact_fewer: 'Пунктов на {n} меньше, чем было: один выпал или два склеились.', mem_compact_broken: 'Строка начинается с середины фразы — похоже, пункт разрезан: {list}.',
+        mem_compact_restored: 'Последняя строка пропала — возвращена слово в слово.', mem_compact_small: 'Короче меньше чем на 15%: повторов в этой памяти мало, утрамбовка почти ничего не даёт.',
         tab_people: 'Люди', people_h1: 'Кто есть кто', live_h: 'Bonds · сейчас', live_conflict: 'в ссоре с тобой', live_level: 'уровень из Bonds', live_now: 'настроение',
         set_bondssync: 'С RPG Status Bar + Bonds: показывать его живые отношения на странице «Люди» и брать его уровень при каждой сводке',
         set_mergepeople: '«Отношения» и «НПС» одной вкладкой — «Люди»', set_send_h: 'Что уходит ИИ', set_send_note: 'Снятое остаётся в книге — просто не отправляется.',
@@ -1020,7 +1030,7 @@ function applySummary(obj, hadPrior, msgN) {
     if (memText && state.memoryLocked) {
         // Memory text is frozen by the user. Keep the AI's proposal as a draft they can look at,
         // and let every other fact (events, NPCs, gifts, bond…) keep updating as usual.
-        state.pendingMemory = memText;
+        state.pendingMemory = memText; state.pendingInfo = null;
         toastr.info(t('mem_locked_kept'), '', { timeOut: 9000 });
     } else if (memText) {
         const prevText = (state.summary || '').trim();
@@ -2022,20 +2032,35 @@ function memL() {
             ${lockBtn}
             <button class="rd-btn rpg-d-continue">${t('cont_btn')}</button></div>`;
     const draft = (state.pendingMemory || '').trim();
-    const draftCard = draft ? `<div class="rd-draft">
+    const pi = state.pendingInfo && state.pendingInfo.kind === 'compact' ? state.pendingInfo : null;
+    // a compacted memory: how much shorter, what may have gone missing, and the whole text to read before taking it
+    const draftCard = draft ? (pi ? `<div class="rd-draft">
+            <div class="rd-eyebrow">🗜 ${t('mem_compact_draft')}</div>
+            <div class="rd-meta">${escapeHtml(t('mem_compact_words', { from: pi.from, to: pi.to }))}</div>
+            ${pi.lost && pi.lost.length ? `<div class="rd-warn">⚠ ${escapeHtml(t('mem_compact_lost', { list: pi.lost.join(', ') }))}</div>` : `<div class="rd-meta">✓ ${escapeHtml(t('mem_compact_kept'))}</div>`}
+            ${pi.fewer ? `<div class="rd-warn">⚠ ${escapeHtml(t('mem_compact_fewer', { n: pi.fewer }))}</div>` : ''}
+            ${pi.broken && pi.broken.length ? `<div class="rd-warn">⚠ ${escapeHtml(t('mem_compact_broken', { list: pi.broken.map(x => '«' + x + '…»').join(', ') }))}</div>` : ''}
+            ${pi.restored ? `<div class="rd-meta">↩ ${escapeHtml(t('mem_compact_restored'))}</div>` : ''}
+            ${pi.small ? `<div class="rd-meta">ℹ ${escapeHtml(t('mem_compact_small'))}</div>` : ''}
+            <details class="rd-draft-full"><summary>${escapeHtml(t('mem_compact_read'))}</summary><div class="rd-draft-t" style="white-space:pre-wrap">${escapeHtml(draft)}</div></details>
+            <div class="rd-acts">
+                <button class="rd-btn rpg-d-draft-apply">${t('mem_draft_apply')}</button>
+                <button class="rd-btn rpg-d-draft-drop">${t('mem_draft_drop')}</button>
+            </div></div>` : `<div class="rd-draft">
             <div class="rd-eyebrow">${t('mem_draft')}</div>
             <div class="rd-draft-t">${escapeHtml(draft.slice(0, 220))}…</div>
             <div class="rd-acts">
                 <button class="rd-btn rpg-d-draft-apply">${t('mem_draft_apply')}</button>
                 <button class="rd-btn rpg-d-draft-append">${t('mem_draft_append')}</button>
                 <button class="rd-btn rpg-d-draft-drop">${t('mem_draft_drop')}</button>
-            </div></div>` : '';
+            </div></div>`) : '';
     return head + `<div class="rd-entry" style="flex:1;overflow-y:auto"><p>${escapeHtml(mem).replace(/\n/g, '<br>')}</p></div>
         ${draftCard}
         <div class="rd-acts">
             <button class="rd-btn prim rpg-d-sum">${t('act_summarize')}</button>
             ${lockBtn}
             <button class="rd-btn rpg-d-memedit">${t('mem_edit')}</button>
+            <button class="rd-btn rpg-d-compact" title="${escapeHtml(t('mem_compact_hint'))}">🗜 ${t('mem_compact')}</button>
             <button class="rd-btn rpg-d-libsave">${t('mem_tolib')}</button>
             <button class="rd-btn rpg-d-resum" title="${escapeHtml(t('act_resum'))}">⟲</button>
         </div>`;
@@ -2068,6 +2093,52 @@ function memR() {
         <button class="rd-mini rpg-d-libdel" data-id="${sm.id}" title="${escapeHtml(t('lib_del'))}">✕</button>
     </div>`).join('')}</div>` + versBlock + acts;
 }
+/* 🗜 Compact: the same memory in fewer words — on request only, never on its own. The summary is not
+   touched: the result is a draft beside it, with how many words it saves, a check that every name and
+   number is still there, and the whole text to read. Taking it keeps the old version in Versions (⟲). */
+const COMPACT_SYS = 'You compress a roleplay\'s long-term memory without losing anything. Keep EVERY fact, name, number, rule, debt, item, place and event — only remove repetition and wordiness. Merge lines that say the same thing; shorten long phrasing; keep the same structure (the same sections and bullet lists), the same language and the neutral third person. Do not add anything new, do not soften or judge, do not change the order of the history. Every bullet stays a bullet of its own, with its title — never drop or merge two bullets into one. Keep the very last line word for word. Return ONLY the compacted memory text.';
+function memoryMarkers(text) {
+    // names and numbers: the things a compaction must never drop
+    const out = new Set();
+    const src = String(text || '');
+    (src.match(/\b\d[\d.,:/]*\b/g) || []).forEach(x => out.add(x));
+    (src.match(/(?<![\p{L}])\p{Lu}[\p{L}'’-]{2,}/gu) || []).forEach(x => out.add(x));
+    const skip = new Set(['The', 'This', 'That', 'They', 'When', 'After', 'Before', 'Hard', 'Events', 'Rules', 'Permissions', 'Current', 'Status', 'Relationship', 'Intimacy', 'Intentions', 'Full', 'Recent', 'Again', 'And', 'But', 'Also', 'His', 'Her', 'She', 'He', 'It', 'In', 'On', 'At', 'With', 'For', 'From', 'Into', 'Then', 'Now', 'Later', 'Once', 'Every', 'Each', 'Other', 'First', 'Second', 'New', 'Old',
+        'Он', 'Она', 'Они', 'Это', 'Потом', 'Затем', 'Снова', 'Теперь', 'После', 'Перед', 'Когда', 'Правила', 'События', 'Отношения', 'Статус', 'Текущий', 'Текущее', 'Намерения', 'Близость']);
+    return [...out].filter(x => !skip.has(x));
+}
+async function compactMemory() {
+    if (aiBusy) return;
+    if (!apiKey()) { toastr.warning(t('t_need_key')); return; }
+    const mem = (state.summary || '').trim();
+    if (!mem) { toastr.info(t('mem_none')); return; }
+    const myChat = currentChatId;
+    aiBusy = true; renderPanel();
+    try {
+        toastr.info(t('mem_compact_busy'));
+        const out = String(await callAI(COMPACT_SYS, mem, 3500) || '').trim();
+        if (!ownsChat(myChat)) { aiBusy = false; return; }
+        if (!out) { toastr.error(t('t_sum_err')); aiBusy = false; renderPanel(); return; }
+        let draft = out;
+        // the closing line ("the settling-in phase is over…") is what keeps a new chat from going cold: never lost
+        const lastOld = mem.split('\n').map(x => x.trim()).filter(Boolean).pop() || '';
+        let restored = false;
+        if (lastOld && !draft.includes(lastOld)) { draft = draft.replace(/\s+$/, '') + '\n\n' + lastOld; restored = true; }
+        const low = draft.toLowerCase();
+        const lost = memoryMarkers(mem).filter(x => !low.includes(x.toLowerCase())).slice(0, 14);
+        // bullets: fewer than before means one was dropped or two were glued together
+        const bullets = x => x.split('\n').filter(l => /^\s*[-•*]\s/.test(l)).length;
+        const fewer = Math.max(0, bullets(mem) - bullets(draft));
+        // a line that starts in the middle of a sentence ("and Jenny had…") is a bullet cut in half
+        const broken = draft.split('\n').filter(l => /^\s*(and|or|but|then|и|а|но)\b/i.test(l) || /^\s+\p{Ll}/u.test(l)).map(l => l.trim().slice(0, 50));
+        const from = mem.split(/\s+/).length, to = draft.split(/\s+/).length;
+        state.pendingMemory = draft;
+        state.pendingInfo = { kind: 'compact', from, to, lost, fewer, broken, restored, small: to > from * 0.85, ts: Date.now() };
+        saveState();
+        toastr.success(t('mem_compact_ready'));
+    } catch (e) { toastr.error(t('t_sum_err')); }
+    aiBusy = false; renderPanel();
+}
 function toggleMemLock() {
     state.memoryLocked = !state.memoryLocked;
     saveState(); renderPanel();
@@ -2077,10 +2148,10 @@ function applyDraft(mode) {
     const draft = (state.pendingMemory || '').trim();
     if (!draft) return;
     const cur = (state.summary || '').trim();
-    if (mode === 'drop') { state.pendingMemory = ''; saveState(); renderPanel(); return; }
+    if (mode === 'drop') { state.pendingMemory = ''; state.pendingInfo = null; saveState(); renderPanel(); return; }
     if (cur) { state.summaries.unshift({ id: genId(), ts: Date.now(), name: getContext().name2 || '', text: cur, words: cur.split(/\s+/).length }); state.summaries = state.summaries.slice(0, 20); }
     state.summary = (mode === 'append' && cur) ? (cur + '\n\n— — —\n' + draft) : draft;
-    state.pendingMemory = '';
+    state.pendingMemory = ''; state.pendingInfo = null;
     updateCarry(); saveState(); renderPanel(); buildInjection();
     toastr.success(t('mem_saved'));
 }
@@ -2641,6 +2712,7 @@ function wire() {
     const ct = root.querySelector('.rpg-d-continue'); if (ct) ct.onclick = () => { editing = { type: 'continue' }; renderPanel(); };
     const me = root.querySelector('.rpg-d-memedit'); if (me) me.onclick = () => { editing = { type: 'memory', data: { summary: state.summary || '' } }; renderPanel(); };
     const ml = root.querySelector('.rpg-d-memlock'); if (ml) ml.onclick = toggleMemLock;
+    const cpt = root.querySelector('.rpg-d-compact'); if (cpt) cpt.onclick = compactMemory;
     const ls = root.querySelector('.rpg-d-libsave');
     if (ls) ls.onclick = () => {
         if (saveToLibrary()) { saveSettings(); renderPanel(); toastr.success(t('mem_tolib_ok')); }

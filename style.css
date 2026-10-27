@@ -364,3 +364,6 @@
 #rpg-diary-root .rd-live-now { opacity: .8; }
 /* settings: what goes to the AI, two columns */
 .rpg-diary-settings .rd-sendgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0 10px; }
+/* the compacted draft: read it in a small scrolling window, the buttons stay in view */
+#rpg-diary-root .rd-draft-full > summary { cursor: pointer; margin: 4px 0; }
+#rpg-diary-root .rd-draft-full .rd-draft-t { max-height: 150px; overflow-y: auto; padding-right: 4px; font-size: 12.5px; line-height: 1.45; }
