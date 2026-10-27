@@ -52,6 +52,8 @@ const I18N = {
         mem_lib: 'Saved memories', mem_lib_h: 'Library', mem_lib_hint: 'Every summarize is archived here. Rename, delete, merge or pull one into this chat.',
         resum_confirm: 'Full re-summarize: re-read the whole chat and rebuild the memory. Your carried-in memory is merged in, not deleted — but hand-edits to the memory text may be rewritten. Continue?',
         tab_bond: 'Bonds', bond_h1: 'Who feels what', no_bond: 'No relationships tracked yet — summarize the chat first.', bond_peak: 'Peak', bond_label: '{name} → YOU', drift: 'RELATIONSHIP DRIFT', drift_warn: 'Cooled sharply: peaked at {peak}%, now {now}%. If the AI regressed the character, press ⟲ or pin the key facts.',
+        inj_here_head: 'Who is here now (from the diary — already true):', inj_here_looks: 'looks', inj_here_met: 'met', inj_here_to: 'toward {user}',
+        set_whohere: 'Who is here: full cards of the people in the scene or just mentioned (never cut)',
         inj_anchor_head: 'Established relationship levels (do NOT regress these):', inj_anchor_note: 'These bonds are already earned. Keep the warmth/trust at least at this level unless something in the current scene changes it.',
         stamp_rag: 'ENTRY GATHERED BY RAG', stamp_manual: 'HANDWRITTEN ENTRY', stamp_link: 'LINKED TO ENTRIES & RELATIONSHIPS',
         dossier: 'Dossier', known_faces: 'Familiar Faces', occupation: 'OCCUPATION', appearance: 'APPEARANCE', how_met: 'HOW YOU MET', note: 'NOTE',
@@ -109,7 +111,20 @@ const I18N = {
         inj_now: 'Now', days_ago: 'days earlier',
         inj_hint: 'This is established history. Treat these relationships and events as already true; do not reset characters to a colder/earlier state.',
         // settings
-        set_title: 'RPG Diary & Memory', set_enable: 'Enable Diary', set_lang: 'Language:',
+        set_title: 'RPG Diary & Memory',
+        set_files_h: 'Saves',
+        tab_people: 'People', people_h1: 'Who is who', live_h: 'Bonds · right now', live_conflict: 'in conflict with you', live_level: 'level from Bonds', live_now: 'mood',
+        set_bondssync: 'With RPG Status Bar + Bonds: show its live relationship on the People page and take its level at each summary',
+        set_mergepeople: 'Bonds and NPCs as one tab, "People"', set_send_h: 'What goes to the AI', set_send_note: 'Unticked parts stay in the book; they are just not sent.',
+        send_bond: 'Relationship levels', send_events: 'Events', send_people: 'People', send_gifts: 'Gifts', send_places: 'Places', send_gloss: 'Glossary',
+        set_find_h: 'Finding memories', set_find_note: 'All of it is done by code, with no calls — except "Re-sort with a model".',
+        set_minscore: 'Do not send weak matches', set_skipknown: 'Skip what the summary or the chat in view already say',
+        set_scenesplit: 'Cut scenes where the scene changes; recall whole lines, never mid-word', set_ctxheaders: 'Search each piece together with its date, place and who was there',
+        set_dedupe: 'Near-identical memories: send one of them', set_recency: 'Fresher and more important first (old plot never drops below 60%)',
+        set_rerank: 'Re-sort with a model (one small call after each reply)', set_persistvec: 'Keep the vectors in the browser between sessions (no paying twice)',
+        set_outdated: 'Mark records that are no longer true (in the same summary call); they stop going to the AI',
+        old_mark: 'Outdated', old_unmark: 'True again', old_hint: 'Outdated records are kept but no longer sent to the AI.', old_note: 'No longer true', del_twin: 'Delete the duplicate record', del_twin_hint: 'The second record of the same person among the people. Its role, looks and notes go with it.', del_sure: 'Sure? Click again',
+        old_on: 'Marked outdated — no longer sent to the AI.', old_marked: 'The summary marked as no longer true: {list}. Wrong? Open it in the book and press ↺.', old_off: 'True again — back in the memory.', set_anchor_scene: 'Relationship levels: only of those in the scene (the main bond always)', set_trim_carried: 'Carried facts do not repeat the bond (no second bond line, no second record of the main character)', set_enable: 'Enable Diary', set_lang: 'Language:',
         set_api: 'AI (OpenRouter) — used for summaries & entries', set_url: 'API URL', set_key: 'API key', set_model: 'Model', set_temp: 'Temperature',
         set_maxtok: "Max REPLY tokens", set_maxtok_note: "This limits what the AI WRITES (the memory + dossier it returns) — not the size of your chat. Your chat is read in parts, so a 300k-token chat is fine. Lower this only if your model rejects the request.",
         t_sum_many: 'This chat is long: summarizing it will make about {n} AI calls (it only happens once — later summaries read just the new messages). Continue?',
@@ -154,6 +169,8 @@ const I18N = {
         mem_lib: 'Сохранённые памяти', mem_lib_h: 'Библиотека', mem_lib_hint: 'Сюда попадает каждое суммирование. Переименуй, удали, объедини или подтяни в этот чат.',
         resum_confirm: 'Полное пересуммирование: перечитает весь чат и пересоберёт память. Перенесённая память вольётся в неё, а не удалится — но твои ручные правки текста могут быть переписаны. Продолжить?',
         tab_bond: 'Отношения', bond_h1: 'Кто как относится', no_bond: 'Отношения пока не отслеживаются — сначала суммируй чат.', bond_peak: 'Пик', bond_label: '{name} → К ТЕБЕ', drift: 'ДРЕЙФ ОТНОШЕНИЙ', drift_warn: 'Резко охладели: пик {peak}%, сейчас {now}%. Если ИИ откатил персонажа — нажми ⟲ или закрепи ключевые факты.',
+        inj_here_head: 'Кто сейчас рядом (из дневника — это уже правда):', inj_here_looks: 'внешность', inj_here_met: 'знакомство', inj_here_to: 'к {user}',
+        set_whohere: 'Кто рядом: полные карточки тех, кто в сцене или только что упомянут (без обрезки)',
         inj_anchor_head: 'Установленный уровень отношений (НЕ откатывать):', inj_anchor_note: 'Эта близость уже заслужена. Держи тепло/доверие не ниже этого уровня, если только сцена прямо этого не меняет.',
         stamp_rag: 'ЗАПИСЬ СОБРАНА RAG', stamp_manual: 'РУЧНАЯ ЗАПИСЬ', stamp_link: 'СВЯЗАНО С ЗАПИСЯМИ И ОТНОШЕНИЯМИ',
         dossier: 'Досье', known_faces: 'Знакомые лица', occupation: 'РОД ЗАНЯТИЙ', appearance: 'ВНЕШНОСТЬ', how_met: 'КАК ВСТРЕТИЛИСЬ', note: 'ЗАМЕТКА',
@@ -206,7 +223,20 @@ const I18N = {
         inj_wrap: 'ДОЛГОСРОЧНАЯ ПАМЯТЬ', inj_memory_head: 'Перенесённое резюме (прошлая история):', inj_diary_head: 'Связанные воспоминания (с датами — учитывай, КОГДА это было):',
         inj_now: 'Сейчас', days_ago: 'дн. назад',
         inj_hint: 'Это уже установленная история. Считай эти отношения и события уже истинными; не откатывай персонажей к более холодному/раннему состоянию.',
-        set_title: 'RPG Дневник и Память', set_enable: 'Включить дневник', set_lang: 'Язык:',
+        set_title: 'RPG Дневник и Память',
+        set_files_h: 'Сохранения',
+        tab_people: 'Люди', people_h1: 'Кто есть кто', live_h: 'Bonds · сейчас', live_conflict: 'в ссоре с тобой', live_level: 'уровень из Bonds', live_now: 'настроение',
+        set_bondssync: 'С RPG Status Bar + Bonds: показывать его живые отношения на странице «Люди» и брать его уровень при каждой сводке',
+        set_mergepeople: '«Отношения» и «НПС» одной вкладкой — «Люди»', set_send_h: 'Что уходит ИИ', set_send_note: 'Снятое остаётся в книге — просто не отправляется.',
+        send_bond: 'Уровни отношений', send_events: 'События', send_people: 'Люди', send_gifts: 'Дары', send_places: 'Места', send_gloss: 'Глоссарий',
+        set_find_h: 'Как искать воспоминания', set_find_note: 'Всё это делает код, без вызовов модели — кроме «Пересортировать моделью».',
+        set_minscore: 'Не отправлять слабые совпадения', set_skipknown: 'Пропускать то, что уже есть в сводке или в видимой части чата',
+        set_scenesplit: 'Резать сцены по смене сцены; вспоминать целые реплики, а не обрывки', set_ctxheaders: 'Искать каждый кусок вместе с датой, местом и тем, кто был рядом',
+        set_dedupe: 'Почти одинаковые воспоминания — отправлять одно', set_recency: 'Свежее и важное — выше (старый сюжет не опускается ниже 60%)',
+        set_rerank: 'Пересортировать моделью (один маленький вызов после каждого ответа)', set_persistvec: 'Хранить векторы в браузере между сессиями (не платить дважды)',
+        set_outdated: 'Помечать записи, которые больше не верны (в том же вызове сводки); они перестают уходить ИИ',
+        old_mark: 'Устарело', old_unmark: 'Снова верно', old_hint: 'Устаревшие записи хранятся, но больше не уходят ИИ.', old_note: 'Больше не верно', del_twin: 'Удалить запись-повтор', del_twin_hint: 'Вторая запись того же человека среди людей. Вместе с ней уйдут её род занятий, внешность и заметки.', del_sure: 'Точно? Нажми ещё раз',
+        old_on: 'Помечено устаревшим — больше не уходит ИИ.', old_marked: 'Сводка пометила как уже неверное: {list}. Ошибка? Открой в книге и нажми ↺.', old_off: 'Снова верно — вернулось в память.', set_anchor_scene: 'Уровни отношений — только тех, кто в сцене (главная связь всегда)', set_trim_carried: 'Перенесённые факты не повторяют связь (без второй строки связи и второй записи главного персонажа)', set_enable: 'Включить дневник', set_lang: 'Язык:',
         set_api: 'ИИ (OpenRouter) — для резюме и записей', set_url: 'API URL', set_key: 'API-ключ', set_model: 'Модель', set_temp: 'Температура',
         set_maxtok: 'Макс. токенов ОТВЕТА', set_maxtok_note: 'Ограничивает то, что ИИ ПИШЕТ (память и досье в ответе) — а не размер твоего чата. Чат читается по частям, так что даже 300k токенов не проблема. Снижай, только если модель отказывается принимать запрос.',
         t_sum_many: 'Чат длинный: суммирование сделает примерно {n} запросов к ИИ (это разово — дальше читаются только новые сообщения). Продолжить?',
@@ -264,6 +294,23 @@ const defaultSettings = {
     injectEntries: 3,
     injectBudget: 1400,
     notesToAI: false,
+    anchorSceneOnly: true,
+    whoHere: true,
+    bondsSync: true,         // with RPG Status Bar + Bonds: its live relationship on the People page, and its level taken at each summary
+    mergePeople: true,       // "Bonds" and "NPCs" as one tab, "People"
+    // what goes to the AI from the book (unticked: kept in the book, not sent)
+    sendBond: true, sendEvents: true, sendPeople: true, sendGifts: true, sendPlaces: true, sendGloss: true,           // full cards of the people in the scene (or just mentioned), straight from the book
+    // finding memories (all done by code unless marked)
+    ragMinScore: true,       // weak matches are not sent
+    skipKnown: true,         // not what the summary or the chat in view already say
+    sceneSplit: true,        // scenes cut where the scene changes; recalled as whole lines, never mid-word
+    ctxHeaders: true,        // each piece searched together with its date, place and who was there
+    ragDedupe: true,         // near-identical memories: one of them
+    recencyWeight: false,    // fresher and more important first (old plot is never pushed below 60%)
+    rerank: false,           // one small model call after each reply re-sorts the found pieces
+    persistVectors: true,    // vectors kept in the browser between sessions
+    outdatedFacts: true,     // the summary marks records that are no longer true; they stop going to the AI   // relationship levels: only of those in the scene (the main bond always)
+    trimCarried: true,       // carried facts do not repeat the summary or the bond line
     autoEntry: false,
     autoSummarize: false,
     autoEntryDays: 1,
@@ -621,8 +668,53 @@ function parseJSON(raw) {
 /* ---- EMBEDDINGS (optional vector RAG) ---- */
 const vecCache = new Map();   // key `${chunkId}:${hash}` -> Float array. In-memory only (not persisted).
 let lastQueryVec = null, embedBusy = false, embedTimer = null, embedWorking = false;
-function vecKey(c) { return 'h' + hashText(String(c.text || '') + '|' + String(c.extra || '')); }
+// What a piece is searched by: its text, and — with "date, place, who" on — a short header in front, so
+// "the library with Rufus" finds the scene that happened there even when the lines never say "library".
+function chunkHeader(c) {
+    const bits = [c.date, c.loc, c.who].map(x => String(x || '').trim()).filter(Boolean);
+    return bits.length ? `[${bits.join(' · ')}]` : '';
+}
+function indexText(c) {
+    const h = settings.ctxHeaders !== false ? chunkHeader(c) : '';
+    return (h ? h + '\n' : '') + String(c.text || '') + ' ' + String(c.extra || '');
+}
+function vecKey(c) { const x = indexText(c); return 'h' + hashText(x) + ':' + x.length; }
 function hashText(s) { let h = 0; s = String(s || ''); for (let i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) | 0; } return h; }
+/* ---- vectors kept in the browser (IndexedDB), by the embedding model and the text's hash ---- */
+const IDB_NAME = 'rpg_diary_vectors', IDB_STORE = 'v';
+let idbP = null;
+function idb() {
+    if (idbP) return idbP;
+    idbP = new Promise((res) => {
+        try {
+            const rq = indexedDB.open(IDB_NAME, 1);
+            rq.onupgradeneeded = () => { try { rq.result.createObjectStore(IDB_STORE); } catch (e) { /* exists */ } };
+            rq.onsuccess = () => res(rq.result);
+            rq.onerror = () => res(null);
+        } catch (e) { res(null); }   // private mode, blocked storage: work without it
+    });
+    return idbP;
+}
+function idbKey(k) { return (settings.embedModel || 'default') + '|' + k; }
+async function idbGetMany(keys) {
+    const out = {};
+    const db = await idb(); if (!db || !keys.length) return out;
+    await new Promise((res) => {
+        try {
+            const tx = db.transaction(IDB_STORE, 'readonly'), st = tx.objectStore(IDB_STORE);
+            keys.forEach(k => { const r = st.get(idbKey(k)); r.onsuccess = () => { const v = r.result; if (v && v.v) out[k] = Array.from(v.v); }; });
+            tx.oncomplete = res; tx.onerror = res; tx.onabort = res;
+        } catch (e) { res(); }
+    });
+    return out;
+}
+async function idbPutMany(map) {
+    const db = await idb(); const ks = Object.keys(map); if (!db || !ks.length) return;
+    try {
+        const tx = db.transaction(IDB_STORE, 'readwrite'), st = tx.objectStore(IDB_STORE);
+        ks.forEach(k => st.put({ v: new Float32Array(map[k]), ts: Date.now() }, idbKey(k)));
+    } catch (e) { /* full or blocked: it is only a cache */ }
+}
 function embedConfigured() { return settings.useEmbeddings && !!(settings.embedUrl || apiUrl()) && !!(settings.embedKey || apiKey()); }
 async function testEmbeddings() {
     const btn = document.getElementById('rpgd-embtest');
@@ -675,12 +767,19 @@ async function refreshEmbeddings() {
         const need = [], needKeys = [];
         for (const c of chunks) {
             const key = vecKey(c);
-            if (!vecCache.has(key)) { need.push(c.text + ' ' + (c.extra || '')); needKeys.push(key); }
+            if (!vecCache.has(key)) { need.push(indexText(c)); needKeys.push(key); }
+        }
+        // kept in the browser: what was paid for once is read back, not bought again
+        if (need.length && settings.persistVectors !== false) {
+            const got = await idbGetMany(needKeys);
+            for (let i = need.length - 1; i >= 0; i--) { const v = got[needKeys[i]]; if (v) { vecCache.set(needKeys[i], v); need.splice(i, 1); needKeys.splice(i, 1); } }
         }
         const BATCH = 64;
         for (let i = 0; i < need.length; i += BATCH) {
             const vs = await embed(need.slice(i, i + BATCH));
-            vs.forEach((v, j) => { const k = needKeys[i + j]; if (k && v) vecCache.set(k, v); });
+            const fresh = {};
+            vs.forEach((v, j) => { const k = needKeys[i + j]; if (k && v) { vecCache.set(k, v); fresh[k] = v; } });
+            if (settings.persistVectors !== false) idbPutMany(fresh);
         }
         // Scene-chunk boundaries shift as the chat grows, so old boundary keys become orphans;
         // cap the cache so a long session doesn't hoard thousands of dead vectors in memory.
@@ -765,11 +864,12 @@ Output terse factual bullets, no headings, no preamble, in ${outLang()}.`;
 function existingDossierBlock() {
     if (!state) return '';
     const p = [];
-    if (state.npcs.length) p.push('NPCs: ' + state.npcs.map(n => `${n.name} — role: ${n.role || '?'}; how_met: ${n.met || '?'}; note: ${n.note || '?'}`).join(' | '));
-    if (state.events.length) p.push('EVENTS: ' + state.events.map(e => e.title).join(' | '));
-    if (state.locations.length) p.push('LOCATIONS: ' + state.locations.map(l => l.name).join(', '));
-    if (state.gifts.length) p.push('GIFTS: ' + state.gifts.map(g => `${g.item} (${g.who})`).join(' | '));
-    if (state.glossary.length) p.push('GLOSSARY: ' + state.glossary.map(g => g.term).join(', '));
+    const od = x => (x && x.old ? ' (outdated)' : '');
+    if (state.npcs.length) p.push('NPCs: ' + state.npcs.map(n => `${n.name}${od(n)} — role: ${n.role || '?'}; how_met: ${n.met || '?'}; note: ${n.note || '?'}`).join(' | '));
+    if (state.events.length) p.push('EVENTS: ' + state.events.map(e => e.title + od(e)).join(' | '));
+    if (state.locations.length) p.push('LOCATIONS: ' + state.locations.map(l => l.name + od(l)).join(', '));
+    if (state.gifts.length) p.push('GIFTS: ' + state.gifts.map(g => `${g.item} (${g.who})${od(g)}`).join(' | '));
+    if (state.glossary.length) p.push('GLOSSARY: ' + state.glossary.map(g => g.term + od(g)).join(', '));
     if (!p.length) return '';
     let blk = p.join('\n');
     if (blk.length > 2500) blk = blk.slice(0, 2500) + '…';
@@ -802,6 +902,7 @@ function dossierPrompt() {
     const nm = names();
     return 'Extract structured records from the roleplay notes below. Focus character: "' + nm.char + '". Player: "' + nm.user + '".\n'
         + existingDossierBlock() + '\n'
+        + (earlierEntries(3) ? 'EARLIER DIARY ENTRIES (already written — the new "entry" must not repeat their openings, images, turns of phrase or conclusions):\n"""' + earlierEntries(3) + '"""\n\n' : '')
         + 'Return STRICT JSON only, nothing else:\n'
         + '{\n'
         + ' "title": "<short 3-7 word label for this story, e.g. \'Rufus — Moriarty\'s operative\'>",\n'
@@ -811,8 +912,10 @@ function dossierPrompt() {
         + ' "locations": [{"name":"","desc":""}],\n'
         + ' "gifts": [{"dir":"out|in","item":"","who":"<from> → <to>","when":"","why":""}],\n'
         + ' "glossary": [{"term":"","def":""}],\n'
-        + ' "entry": {"text":"<short first-person diary entry by ' + nm.char + ' about this stretch>","mood":"","tags":["",""]}\n'
+        + ' "entry": {"text":"<short first-person diary entry by ' + nm.char + ' about this stretch — new things in fresh words, not a repeat of the earlier entries>","mood":"","tags":["",""]}'
+        + (settings.outdatedFacts !== false ? ',\n "outdated": [{"kind":"event|npc|gift|location|glossary","name":"<the EXACT name/title from the EXISTING DOSSIER>","why":"<what changed, one short line>"}]\n' : '\n')
         + '}\n'
+        + (settings.outdatedFacts !== false ? '"outdated": list ONLY existing records that the new notes clearly show are NO LONGER TRUE (a debt paid off, a rule lifted, a place destroyed, someone who died or left for good). A record that merely changed (an enemy became an ally) is UPDATED instead, not listed here. Leave it empty when nothing stopped being true.\n' : '')
         + 'KEEP THE REPLY SMALL: include a record ONLY if it is NEW, or if you have NEW information about it. Do NOT re-emit unchanged records — they are already saved.\n'
         + 'BUT when you DO include a record that already exists, use the SAME EXACT NAME/TITLE and write the COMPLETE MERGED version (old facts + new facts, woven into one coherent description). Never return a shorter, poorer version of an existing record — that would erase what we know.\n'
         + '"events" must capture the concrete plot beats (confinements, faintings, debts incurred, bargains, reveals, injuries, turning points).\n'
@@ -946,6 +1049,12 @@ function applySummary(obj, hadPrior, msgN) {
         if (obj.bond.status) state.bond.status = mergeText(state.bond.status, String(obj.bond.status), 300);
     }
     mergeEvents(obj.events); mergeNpcs(obj.npcs); mergeLocations(obj.locations); mergeGifts(obj.gifts); mergeGlossary(obj.glossary);
+    syncFromBonds();
+    if (settings.outdatedFacts !== false) {
+        const marked = markOutdated(obj.outdated);
+        // said out loud, so a wrong mark is seen and undone at once (↺ in the book)
+        if (marked.length) toastr.info(t('old_marked', { list: marked.join(', ') }), '', { timeOut: 12000 });
+    }
     if (obj.entry && obj.entry.text) {
         const st = currentStamp();
         state.entries.push({
@@ -975,6 +1084,61 @@ function mergeText(oldV, newV, cap) {
     if (out.length > lim) out = out.slice(0, lim) + '…';
     return out;
 }
+// records the summary says are no longer true: kept in the book, greyed, no longer sent to the AI
+function markOutdated(arr) {
+    if (!Array.isArray(arr)) return [];
+    const lists = { event: ['events', 'title'], npc: ['npcs', 'name'], gift: ['gifts', 'item'], location: ['locations', 'name'], glossary: ['glossary', 'term'] };
+    const done = [];
+    for (const o of arr) {
+        if (!o || !o.name) continue;
+        const kinds = lists[o.kind] ? [o.kind] : Object.keys(lists);
+        for (const k of kinds) {
+            const [key, field] = lists[k];
+            const hit = (state[key] || []).find(x => norm(x[field]) === norm(o.name));
+            if (hit && !hit.pin && !hit.old) { hit.old = { why: String(o.why || '').slice(0, 200), ts: Date.now(), day: currentStamp().day, by: 'ai' }; done.push(hit[field]); break; }
+        }
+    }
+    return done;
+}
+/* RPG Status Bar + Bonds knows the relationship reply by reply; the summary only guesses it from the text.
+   At each summary its level is taken — for the diary's own character and for everyone with a Bonds page —
+   so the next chat starts from where things really stand. Nothing is taken when Bonds is off or absent. */
+function bondsLive(name) {
+    try {
+        if (settings.bondsSync === false) return null;
+        const B = window.BONDS && window.BONDS.relations;
+        if (!B || !B.available || !B.isEnabled() || typeof B.describe !== 'function') return null;
+        return B.describe(name) || null;
+    } catch (e) { return null; }
+}
+// Bonds already tells the model about this person (its page has seen enough of this chat to be real)
+function bondsTells(name) { const d = bondsLive(name); return !!(d && (d.seen || 0) >= 15); }
+function syncFromBonds() {
+    if (settings.bondsSync === false || !state) return 0;
+    const put = (holder, histKey, v) => {
+        if (typeof v !== 'number' || v === holder.trust) return false;
+        if (!Array.isArray(holder[histKey])) holder[histKey] = (typeof holder.trust === 'number') ? [{ v: holder.trust, ts: 0, day: null }] : [];
+        holder[histKey].push({ v, ts: Date.now(), day: currentStamp().day, by: 'bonds' });
+        if (holder[histKey].length > 40) holder[histKey] = holder[histKey].slice(-40);
+        holder.trust = v;
+        return true;
+    };
+    /* Bonds lives inside one chat: in a new chat its page starts again at "stranger" while the diary
+       remembers a year together. So a level that is LOWER is taken only from a page that has seen at
+       least 15 replies, and never one that falls more than 25 below what the diary holds — a cold
+       new page never drags the memory down. A higher level is always taken. */
+    const fair = (cur, d) => {
+        if (!d || typeof d.level !== 'number') return null;
+        if (typeof cur !== 'number' || d.level >= cur) return d.level;
+        return (d.seen || 0) >= 15 && cur - d.level <= 25 ? d.level : null;
+    };
+    let n = 0;
+    const main = bondsLive(authorName());
+    if (main) { if (!state.bond) state.bond = { trust: null, status: '', history: [] }; const v = fair(state.bond.trust, main); if (v != null && put(state.bond, 'history', v)) n++; }
+    const twin = mainTwin();
+    for (const p of state.npcs) { if (p === twin || p.old) continue; const v = fair(p.trust, bondsLive(p.name)); if (v != null && put(p, 'trustHistory', v)) n++; }
+    return n;
+}
 function mergeEvents(arr) {
     if (!Array.isArray(arr)) return;
     for (const e of arr) {
@@ -982,6 +1146,7 @@ function mergeEvents(arr) {
         const title = String(e.title || (e.what || '').slice(0, 40));
         const dup = state.events.find(x => norm(x.title) === norm(title));
         if (dup) {
+            delete dup.old;   // told again with new facts: it is current
             dup.what = mergeText(dup.what, e.what, 900);
             if (!dup.when && e.when) dup.when = String(e.when);
             if (!dup.where && e.where) dup.where = String(e.where);
@@ -998,6 +1163,7 @@ function mergeNpcs(arr) {
         if (!n || !n.name) continue;
         let ex = state.npcs.find(x => x.name.toLowerCase() === String(n.name).toLowerCase());
         if (!ex) { ex = { id: genId(), name: String(n.name), icon: 'user' }; state.npcs.push(ex); }
+        delete ex.old;
         if (n.role) ex.role = String(n.role);
         ex.look = mergeText(ex.look, n.look, 400);
         const met = n.how_met != null ? n.how_met : n.met;   // schema uses how_met; keep old key working
@@ -1091,6 +1257,13 @@ Reconcile overlaps, keep every distinct fact, and CLARIFY vague references: if a
 }
 
 /* ============================================================ AI DIARY ENTRY */
+/* The diary's last entries, so a new one is not the same page again: the same opening, the same
+   images, the same conclusion. Only shown to the model as what is already written. */
+function earlierEntries(n = 3) {
+    const list = (state && state.entries || []).filter(e => e && e.text).slice(-n);
+    if (!list.length) return '';
+    return list.map(e => `— ${e.date ? '[' + e.date + '] ' : ''}${String(e.text).replace(/\s+/g, ' ').trim().slice(0, 700)}`).join('\n');
+}
 async function generateEntry() {
     if (aiBusy) return;
     if (!apiKey()) { toastr.warning(t('t_need_key')); return; }
@@ -1104,7 +1277,8 @@ async function generateEntry() {
         const vit = readVitals();
         const st = currentStamp();
         const vitLine = vit ? `Current state: ${vit.hp != null ? `HP ${vit.hp}/${vit.hpMax}` : ''}${(vit.buffs && vit.buffs.length) ? `; conditions: ${vit.buffs.map(b => b.name).join(', ')}` : ''}.` : '';
-        const sys = `You ARE "${char}". Write a short, honest FIRST-PERSON diary entry (about 90-160 words) about the most recent scene with "${user}": what happened, what you felt, what it means to you. Intimate, in-character, reflective — not a plot recap. ${vitLine} If wounded or low, let it show. Write in ${outLang()}. Return ONLY the entry text, no title, no quotes.`;
+        const sys = `You ARE "${char}". Write a short, honest FIRST-PERSON diary entry (about 90-160 words) about the most recent scene with "${user}": what happened, what you felt, what it means to you. Intimate, in-character, reflective — not a plot recap. ${vitLine} If wounded or low, let it show. Write in ${outLang()}. Return ONLY the entry text, no title, no quotes.`
+            + (earlierEntries(3) ? `\n\nYOUR EARLIER ENTRIES — already written. Do not repeat their openings, images, turns of phrase or conclusions; write only what is new in this scene, in fresh words:\n"""${earlierEntries(3)}"""` : '');
         const text = await callAI(sys, recent);
         if (!ownsChat(myChat)) { aiBusy = false; return; }   // chat changed — the entry belongs to the OLD chat
         if (!text) { toastr.error(t('t_write_err')); aiBusy = false; renderPanel(); return; }
@@ -1220,25 +1394,36 @@ function sceneChunksImpl(skipTail) {
     // We only index what has fallen out of view (skipTail=0 when archiving the whole chat).
     const end = Math.max(0, chat.length - skipTail);
     const out = [];
-    let buf = '', from = 0, stamp = null;
+    // "cut where the scene changes": a new Scene Card date or place starts a new piece, and a piece
+    // may run longer (one scene, not a slice of 900 characters); the old way stays when it is off
+    const split = settings.sceneSplit !== false;
+    const cap = split ? 1600 : 900;
+    let buf = '', from = 0, stamp = null, who = new Set();
     const flush = (to) => {
         const txt = buf.trim();
         if (txt.length > 120) out.push({
             id: 's' + from + '_' + to, type: 'scene', date: (stamp && stamp.date) || '', day: stamp && stamp.day,
-            ts: 0, pin: false, name: '', text: txt, extra: (stamp && stamp.loc) || ''
+            ts: 0, pin: false, name: '', text: txt, extra: (stamp && stamp.loc) || '',
+            loc: split ? (stamp && stamp.loc) || '' : '', who: split ? [...who].join(', ') : ''
         });
-        buf = '';
+        buf = ''; who = new Set();
     };
     for (let i = 0; i < end; i++) {
         const m = chat[i];
         if (!m || m.is_system) continue;
         if (m.extra && m.extra.rpg_diary_memory) continue;
-        const who = m.is_user ? (ctx.name1 || 'User') : (m.name || ctx.name2 || 'Character');
-        const line = `${who}: ${String(m.mes || '').replace(/\s+/g, ' ').trim()}`;
+        const speaker = m.is_user ? (ctx.name1 || 'User') : (m.name || ctx.name2 || 'Character');
+        const line = `${speaker}: ${String(m.mes || '').replace(/\s+/g, ' ').trim()}`;
         if (!line || line.length < 4) continue;
+        if (split && buf && stamp) {
+            const now = sceneStampFor(chat, i);
+            const moved = (now.date && stamp.date && now.date.split(' · ')[0] !== stamp.date.split(' · ')[0]) || (now.loc && stamp.loc && now.loc !== stamp.loc);
+            if (moved) flush(i - 1);
+        }
         if (!buf) { from = i; stamp = sceneStampFor(chat, i); }
         buf += (buf ? '\n' : '') + line;
-        if (buf.length >= 900) flush(i);
+        who.add(speaker);
+        if (buf.length >= cap) flush(i);
     }
     if (buf) flush(end - 1);
     return out;
@@ -1248,12 +1433,12 @@ function memoryChunks() {
     const c = [];
     for (const e of state.entries) c.push({ id: 'e' + e.id, type: 'diary', date: e.date || '', day: e.gameDay, ts: e.ts, pin: !!e.pin, name: '', text: e.text || '', extra: (e.tags || []).join(' ') + ' ' + (e.loc || '') + ' ' + (e.mood || '') });
     // events are the plot backbone — always retrievable, never gated behind the dossier toggle
-    for (const v of state.events) c.push({ id: 'v' + v.id, type: 'event', date: v.when || '', day: v.day, ts: v.ts, pin: !!v.pin, name: v.title, text: `${v.title}: ${v.what || ''}`.trim(), extra: (v.where || '') + ' ' + (v.who || '') });
+    for (const v of state.events) if (!v.old && settings.sendEvents !== false) c.push({ id: 'v' + v.id, type: 'event', date: v.when || '', day: v.day, ts: v.ts, pin: !!v.pin, name: v.title, text: `${v.title}: ${v.what || ''}`.trim(), extra: (v.where || '') + ' ' + (v.who || '') });
     if (settings.ragDossiers !== false) {
-        for (const n of state.npcs) c.push({ id: 'n' + n.id, type: 'npc', date: '', ts: 0, pin: !!n.pin, name: n.name, text: `${n.name}: ${n.role || ''}. ${n.look || ''} ${n.met || ''} ${n.note || ''}`.trim(), extra: n.name });
-        for (const g of state.gifts) c.push({ id: 'g' + g.id, type: 'gift', date: g.when || '', ts: 0, pin: !!g.pin, name: g.item, text: `${g.item} — ${g.who || ''}. ${g.why || ''}`.trim(), extra: g.item + ' ' + (g.who || '') });
-        for (const l of state.locations) if (l.known) c.push({ id: 'l' + l.id, type: 'loc', date: '', ts: 0, pin: !!l.pin, name: l.name, text: `${l.name}: ${l.desc || ''}`.trim(), extra: l.name });
-        for (const gl of state.glossary) c.push({ id: 'x' + gl.id, type: 'gloss', date: '', ts: 0, pin: !!gl.pin, name: gl.term, text: `${gl.term}: ${gl.def || ''}`.trim(), extra: gl.term });
+        for (const n of state.npcs) if (!n.old && settings.sendPeople !== false) c.push({ id: 'n' + n.id, type: 'npc', date: '', ts: 0, pin: !!n.pin, name: n.name, text: `${n.name}: ${n.role || ''}. ${n.look || ''} ${n.met || ''} ${n.note || ''}`.trim(), extra: n.name });
+        for (const g of state.gifts) if (!g.old && settings.sendGifts !== false) c.push({ id: 'g' + g.id, type: 'gift', date: g.when || '', ts: 0, pin: !!g.pin, name: g.item, text: `${g.item} — ${g.who || ''}. ${g.why || ''}`.trim(), extra: g.item + ' ' + (g.who || '') });
+        for (const l of state.locations) if (l.known && !l.old && settings.sendPlaces !== false) c.push({ id: 'l' + l.id, type: 'loc', date: '', ts: 0, pin: !!l.pin, name: l.name, text: `${l.name}: ${l.desc || ''}`.trim(), extra: l.name });
+        for (const gl of state.glossary) if (!gl.old && settings.sendGloss !== false) c.push({ id: 'x' + gl.id, type: 'gloss', date: '', ts: 0, pin: !!gl.pin, name: gl.term, text: `${gl.term}: ${gl.def || ''}`.trim(), extra: gl.term });
     }
     for (const sc of sceneChunks()) c.push(sc);   // verbatim scenes from the chat itself
     // scenes carried over from a previous chat (only if the user asked for them)
@@ -1285,16 +1470,143 @@ function triggeredChunks(chunks, hay) {
 // embeddings are off or still warming up.
 function rrfRank(chunks, topK) {
     const lists = [];
-    const bm = bm25Rank(chunks, queryTokens(), Math.max(topK * 3, 12));
+    const q = queryTokens();
+    // "weak matches are not sent": a keyword hit counts only if it shares two words with the moment
+    // (or one rare word, like a name) — not by its distance from the best one, which a long scene full of
+    // the same recent words would push away from everything else; a vector hit only
+    // if it is close enough (cosine ≥ 0.2). Off: every hit counts, as before.
+    const strict = settings.ragMinScore !== false;
+    let bm;
+    if (strict) {
+        const sc = bm25Scored(chunks, q);
+        bm = sc.filter(x => x.hits >= 2 || x.rare).slice(0, Math.max(topK * 3, 12)).map(x => x.c);
+    } else bm = bm25Rank(chunks, q, Math.max(topK * 3, 12));
     if (bm.length) lists.push(bm);
     if (embedConfigured()) {
-        const vec = cosineRetrieve(chunks, Math.max(topK * 3, 12));
-        if (vec && vec.length) lists.push(vec);
+        const vs = cosineScored(chunks);
+        if (vs) {
+            const vec = (strict ? vs.filter(x => x.s >= 0.2) : vs).slice(0, Math.max(topK * 3, 12)).map(x => x.c);
+            if (vec.length) lists.push(vec);
+        }
     }
     if (!lists.length) return [];
     const score = new Map();
     for (const list of lists) list.forEach((c, i) => score.set(c.id, (score.get(c.id) || 0) + 1 / (60 + i)));
-    return chunks.filter(c => score.has(c.id)).sort((a, b) => score.get(b.id) - score.get(a.id)).slice(0, topK);
+    // fresher and more important first — gently: an old piece keeps at least 60% of its weight
+    if (settings.recencyWeight === true) {
+        const sc0 = readScene(); const today = sc0 && typeof sc0.day === 'number' ? sc0.day : null;
+        const IMP = { event: 1.3, npc: 1.1, gift: 1.1, diary: 1, scene: 1, loc: 0.9, gloss: 0.9 };
+        for (const c of chunks) {
+            if (!score.has(c.id)) continue;
+            const age = (today != null && typeof c.day === 'number') ? Math.max(0, today - c.day) : null;
+            const fresh = age == null ? 0.8 : 0.6 + 0.4 * Math.exp(-age / 30);
+            score.set(c.id, score.get(c.id) * (IMP[c.type] || 1) * fresh);
+        }
+    }
+    let ranked = chunks.filter(c => score.has(c.id)).sort((a, b) => score.get(b.id) - score.get(a.id));
+    // the model's order, when "re-sort with a model" ran after the last reply for this same moment
+    if (settings.rerank === true && rerankCache && rerankCache.chat === currentChatId && rerankCache.q === rerankQueryKey()) {
+        const pos = new Map(rerankCache.ids.map((id, i) => [id, i]));
+        const known = new Set(rerankCache.seen);
+        ranked = ranked.filter(c => !known.has(c.id) || pos.has(c.id))
+            .sort((a, b) => (pos.has(a.id) ? pos.get(a.id) : 1e3) - (pos.has(b.id) ? pos.get(b.id) : 1e3));
+    }
+    return ranked.slice(0, topK);
+}
+// BM25 with the score, how many query words it shares, and whether one of them is rare (a name)
+function bm25Scored(chunks, q) {
+    const N = chunks.length; if (!N || !q.length) return [];
+    const docs = chunks.map(c => tok(indexText(c)));
+    const df = {};
+    docs.forEach(d => { const seen = new Set(d); seen.forEach(w => df[w] = (df[w] || 0) + 1); });
+    const avgdl = docs.reduce((a, d) => a + d.length, 0) / N || 1;
+    const k1 = 1.5, b = 0.75;
+    const qs = [...new Set(q)];
+    return chunks.map((c, i) => {
+        const d = docs[i], dl = d.length || 1, tf = {};
+        d.forEach(w => tf[w] = (tf[w] || 0) + 1);
+        let s = 0, hits = 0, rare = false;
+        for (const w of qs) {
+            const f = tf[w] || 0; if (!f) continue;
+            hits++;
+            if (df[w] <= Math.max(1, N * 0.05) && w.length >= 4) rare = true;
+            const idf = Math.log(1 + (N - df[w] + 0.5) / (df[w] + 0.5));
+            s += idf * (f * (k1 + 1)) / (f + k1 * (1 - b + b * dl / avgdl));
+        }
+        return { c, s: s + (c.ts ? c.ts / 1e14 : 0), hits, rare };
+    }).filter(x => x.hits > 0).sort((a, b2) => b2.s - a.s);
+}
+function cosineScored(chunks) {
+    if (!lastQueryVec) return null;
+    const scored = [];
+    for (const c of chunks) { const v = vecCache.get(vecKey(c)); if (v) scored.push({ c, s: cosine(lastQueryVec, v) }); }
+    if (scored.length < Math.min(chunks.length, 2)) return null;
+    return scored.sort((a, b) => b.s - a.s);
+}
+/* "skip what the model already sees": the summary, and the messages still in the chat it reads.
+   Each is a source of its own — a memory is skipped only when ONE of them already says most of it
+   (the summary retells the event, a visible message is the same scene). Merely asking about it
+   ("remember the poker game?") does not count: that is a reason to send it. A pinned one always goes. */
+function knownTokens() {
+    const tail = Math.max(10, parseInt(settings.sceneSkipTail) || 30);
+    const all = buildTranscript();
+    // the newest messages are the question being asked, not something already told
+    const seen = all.slice(-tail, -2);
+    const sources = [String(state.summary || '')].concat(seen).filter(Boolean).map(x => new Set(tok(x)));
+    return sources;
+}
+function alreadyKnown(c, sources) {
+    if (c.pin) return false;
+    const w = [...new Set(tok(c.text))];
+    if (w.length < 6) return false;               // too short to judge — a name card, a term
+    return sources.some(src => { let hit = 0; for (const x of w) if (src.has(x)) hit++; return hit / w.length >= 0.75; });
+}
+// near-identical memories: keep the first (best-ranked) of them
+function tokJaccard(a, b) {
+    const A = new Set(tok(a)), B = new Set(tok(b)); if (!A.size || !B.size) return 0;
+    let i = 0; for (const x of A) if (B.has(x)) i++;
+    return i / (A.size + B.size - i);
+}
+function dedupeChunks(list) {
+    const out = [];
+    for (const c of list) {
+        const twin = out.find(o => {
+            if (tokJaccard(o.text, c.text) >= 0.6) return true;
+            const va = vecCache.get(vecKey(o)), vb = vecCache.get(vecKey(c));
+            return !!(va && vb && cosine(va, vb) >= 0.93);
+        });
+        if (!twin || c.pin) out.push(c);
+    }
+    return out;
+}
+/* "re-sort with a model": after each reply, one small call looks at the found pieces and the moment and
+   says which help and in what order; the next injection uses that order. Shown to her before it was added. */
+let rerankCache = null, rerankBusy = false;
+function rerankQueryKey() { return String(hashText(buildTranscript().slice(-2).join('\n'))); }
+async function rerankNow() {
+    if (settings.rerank !== true || rerankBusy || !apiKey() || !state || isExternal()) return;
+    const ragOn = settings.ragToggle || (settings.injectWhenFull && contextIsFull());
+    if (!ragOn || !settings.injectDiary) return;
+    const myChat = currentChatId, qk = rerankQueryKey();
+    const chunks = memoryChunks().filter(c => !c.pin);
+    const saved = rerankCache; rerankCache = null;           // rank without the old order
+    const cands = rrfRank(chunks, 15);
+    rerankCache = saved;
+    if (cands.length < 2) return;
+    rerankBusy = true;
+    try {
+        const now = buildTranscript().slice(-2).join('\n').slice(-1500);
+        const list = cands.map((c, i) => `${i + 1}. ${formatChunk(c).replace(/^• /, '').slice(0, 300)}`).join('\n');
+        const sys = 'You pick memories for a roleplay. Given the current moment and numbered memory snippets, return the numbers of the snippets that would actually help write the next reply, most useful first. Leave out anything unrelated. Output JSON only: {"use":[numbers]}';
+        const raw = await callAI(sys, `NOW:\n${now}\n\nMEMORIES:\n${list}`, 120);
+        if (!ownsChat(myChat)) return;
+        const j = parseJSON(raw);
+        const nums = j && Array.isArray(j.use) ? j.use.map(n => parseInt(n, 10)).filter(n => n >= 1 && n <= cands.length) : null;
+        if (!nums) return;
+        rerankCache = { chat: myChat, q: qk, ids: [...new Set(nums)].map(n => cands[n - 1].id), seen: cands.map(c => c.id) };
+        buildInjection();
+    } catch (e) { /* the order found by code stays */ }
+    finally { rerankBusy = false; }
 }
 // Keep the injection varied: don't let five diary entries crowd out the one event that matters.
 function diversify(list, limit) {
@@ -1319,21 +1631,35 @@ function retrieveMemory() {
 
     // 1) pinned facts are non-negotiable — the debt, the disguise, the thing that must never be forgotten
     for (const c of chunks) if (c.pin) push(c);
+    const known = settings.skipKnown !== false ? knownTokens() : null;
+    const fresh = c => !(c.type === 'npc' && hereIds.has(c.id.slice(1))) && (!known || !alreadyKnown(c, known));
     if (ragOn) {
         const hay = recentText();
         // 2) whoever/whatever is on-screen right now
-        for (const c of triggeredChunks(chunks, hay)) push(c);
+        for (const c of triggeredChunks(chunks, hay)) if (fresh(c)) push(c);
         // 3) best semantic/keyword matches, kept varied
-        const rest = chunks.filter(c => !picked.some(x => x.id === c.id));
-        for (const c of diversify(rrfRank(rest, limit * 2), limit)) push(c);
+        const rest = chunks.filter(c => !picked.some(x => x.id === c.id) && fresh(c));
+        let ranked = rrfRank(rest, limit * 3);
+        if (settings.ragDedupe !== false) ranked = dedupeChunks(picked.concat(ranked)).filter(c => !picked.includes(c));
+        for (const c of diversify(ranked, limit)) push(c);
     } else {
-        for (const e of state.entries.slice(-limit)) push({ id: 'e' + e.id, type: 'diary', date: e.date, day: e.gameDay, text: e.text });
+        for (const e of state.entries.slice(-limit)) { const c = { id: 'e' + e.id, type: 'diary', date: e.date, day: e.gameDay, text: e.text }; if (fresh(c)) push(c); }
     }
     // oldest → newest reads like a timeline; undated dossier items sink to the end
     picked.sort((a, b) => (a.day ?? 1e9) - (b.day ?? 1e9) || (a.ts || 0) - (b.ts || 0));
-    let out = picked.map(formatChunk).join('\n');
+    lastQSet = new Set(queryTokens());
+    const lines = picked.map(formatChunk);
     const budget = settings.injectBudget || 1400;
-    if (out.length > budget) out = out.slice(0, budget) + '…';
+    let out = lines.join('\n');
+    if (out.length > budget) {
+        if (settings.sceneSplit !== false) {
+            // whole memories only: the last ones that do not fit are left out, nothing is cut mid-word
+            const keep = []; let len = 0;
+            for (const l of lines) { if (len + l.length + 1 > budget && keep.length) break; keep.push(l); len += l.length + 1; }
+            out = keep.join('\n');
+            if (out.length > budget) out = cutAtWord(out, budget);
+        } else out = out.slice(0, budget) + '…';
+    }
     return out;
 }
 function snapshotDossier() {
@@ -1366,7 +1692,10 @@ function snapshotFromChat(chatId) {
         glossary: (src.glossary || []).map(strip)
     };
 }
-function dossierDigest(s) {
+function dossierDigest(s0) {
+    // outdated records are kept in the book, not carried as facts
+    const live = a => (a || []).filter(x => !x.old);
+    const s = Object.assign({}, s0, { events: live(s0.events), npcs: live(s0.npcs), gifts: live(s0.gifts), locations: live(s0.locations), glossary: live(s0.glossary) });
     const parts = [];
     if (s.bond && typeof s.bond.trust === 'number') parts.push(`BOND — ${(getContext().name2 || 'the character')}: ${s.bond.trust}/100${s.bond.status ? ' — ' + s.bond.status : ''}`);
     if (s.events.length) parts.push(t('tab_evt') + ' — ' + s.events.map(e => `${e.title}${e.when ? ` (${e.when})` : ''}${e.where ? `, ${e.where}` : ''}: ${e.what || ''}`).join('; '));
@@ -1397,7 +1726,7 @@ function updateCarry() {
 }
 function bm25Rank(chunks, q, topK) {
     const N = chunks.length; if (!N || !q.length) return [];
-    const docs = chunks.map(c => tok(c.text + ' ' + (c.extra || '')));
+    const docs = chunks.map(c => tok(indexText(c)));
     const df = {};
     docs.forEach(d => { const seen = new Set(d); seen.forEach(w => df[w] = (df[w] || 0) + 1); });
     const avgdl = docs.reduce((a, d) => a + d.length, 0) / N || 1;
@@ -1428,12 +1757,86 @@ function relDay(day) {
     return diff > 0 ? ` · ${diff} ${t('days_ago')}` : '';
 }
 function typeTag(type) { return type === 'scene' ? (t('scene_tag') + ' — ') : type === 'event' ? (t('tab_evt') + ' — ') : type === 'npc' ? 'NPC — ' : type === 'gift' ? (t('tab_gift') + ' — ') : type === 'loc' ? (t('tab_loc') + ' — ') : type === 'gloss' ? (t('tab_gloss') + ' — ') : ''; }
+let lastQSet = new Set();
+function cutAtWord(s, max) {
+    if (s.length <= max) return s;
+    const cut = s.slice(0, max);
+    const sp = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('! '), cut.lastIndexOf('? '), cut.lastIndexOf('» '), cut.lastIndexOf('" '));
+    const at = sp > max * 0.5 ? sp + 1 : cut.lastIndexOf(' ');
+    return cut.slice(0, at > 0 ? at : max).trimEnd() + ' …';
+}
+// the run of whole lines that shares the most words with the moment, up to max characters
+function sceneExcerpt(text, qset, max) {
+    const lines = String(text).split('\n').filter(Boolean);
+    const score = l => { let n = 0; for (const w of new Set(tok(l))) if (qset.has(w)) n++; return n; };
+    const sc = lines.map(score);
+    let best = 0, bestS = -1;
+    for (let i = 0; i < lines.length; i++) {
+        let len = 0, s0 = 0;
+        for (let j = i; j < lines.length && len + lines[j].length <= max; j++) { len += lines[j].length + 1; s0 += sc[j]; }
+        if (s0 > bestS) { bestS = s0; best = i; }
+    }
+    const out = []; let len = 0;
+    for (let j = best; j < lines.length; j++) { if (len + lines[j].length > max && out.length) break; out.push(lines[j]); len += lines[j].length + 1; }
+    let body = out.join(' / ');
+    if (body.length > max) body = cutAtWord(body, max);
+    return (best > 0 ? '… ' : '') + body + (best + out.length < lines.length && !/…$/.test(body) ? ' …' : '');
+}
 function formatChunk(c) {
     const when = c.date ? `[${c.date}${relDay(c.day)}] ` : '';
     const pin = c.pin ? '📌 ' : '';
     let body = c.text;
-    if (c.type === 'scene' && body.length > 420) body = body.slice(0, 420) + '…';   // a recalled scene, not a re-run of the chat
+    if (c.type === 'scene' && body.length > 420) {
+        // a recalled scene, not a re-run of the chat: the lines closest to the moment, whole
+        body = settings.sceneSplit !== false ? sceneExcerpt(body, lastQSet, 460) : body.slice(0, 420) + '…';
+    }
     return `• ${pin}${when}${typeTag(c.type)}${body}`;
+}
+/* Who is in the scene, by code: the Scene Card's list of who is present, else whoever spoke in the
+   last six replies (the last two always). Nothing known: null — then nobody is filtered out. */
+function firstName(n) { return String(n || '').trim().toLowerCase().split(/[\s(]+/)[0]; }
+function sceneNames() {
+    const out = new Set();
+    const chat = (getContext().chat || []).filter(m => m && !m.is_user && !m.is_system && m.name);
+    let listed = null;
+    try {
+        const sc = window.RPG && window.RPG.scene && window.RPG.scene.available && window.RPG.scene.get ? window.RPG.scene.get() : null;
+        if (sc && Array.isArray(sc.characters) && sc.characters.length) listed = sc.characters.map(c => firstName(c && (c.name || c)));
+    } catch (e) { listed = null; }
+    if (listed) { listed.forEach(n => out.add(n)); chat.slice(-2).forEach(m => out.add(firstName(m.name))); }
+    else chat.slice(-6).forEach(m => out.add(firstName(m.name)));
+    return out.size ? out : null;
+}
+/* "Who is here": the people in the scene (the Scene Card's list or the recent speakers) and anyone named
+   in the last two messages — their whole card from the book, never cut. The main character is the summary's
+   own subject and is left out; someone outdated, too. Up to five. They are not sent twice: the memory
+   search below skips their cards. */
+let hereIds = new Set();
+function whoHereCards() {
+    if (settings.whoHere === false || settings.sendPeople === false || !state || !state.npcs.length) return [];
+    const { user, char } = names();
+    const skip = new Set([firstName(char), firstName(user)]);
+    const present = sceneNames() || new Set();
+    const said = buildTranscript().slice(-2).join(' ').toLowerCase();
+    const out = [];
+    for (const n of state.npcs) {
+        if (!n || !n.name || n.old) continue;
+        const f = firstName(n.name);
+        if (!f || skip.has(f)) continue;
+        const full = String(n.name).toLowerCase().trim();
+        const named = said.includes(full) || (f.length >= 4 && new RegExp('(^|[^\\p{L}])' + f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '', 'u').test(said));
+        if (present.has(f) || named) out.push(n);
+    }
+    return out.sort((a, b) => (b.pin ? 1 : 0) - (a.pin ? 1 : 0) || (b.trust || 0) - (a.trust || 0)).slice(0, 5);
+}
+function npcCard(n, levelShown) {
+    const { user } = names();
+    const bits = [];
+    if (n.look) bits.push(`${t('inj_here_looks')}: ${n.look}`);
+    if (n.met) bits.push(`${t('inj_here_met')}: ${n.met}`);
+    if (n.note) bits.push(`${t('inj_here_to', { user })}: ${n.note}`);
+    const lvl = typeof n.trust === 'number' && !levelShown && !bondsTells(n.name) ? ` [${t('relationship').toLowerCase()} ${n.trust}/100]` : '';
+    return `• ${n.name}${n.role ? ' — ' + n.role : ''}${lvl}${bits.length ? '. ' + bits.join('. ') : ''}`;
 }
 function buildInjection() {
     // 'both' mode uses a second prompt key for the top-of-context copy; both keys are cleared together
@@ -1472,21 +1875,57 @@ function buildInjection() {
         dossier = String(state.carriedDossier).trim();
     }
     if (mem && settings.injectSummary !== false) blocks.push(`${t('inj_memory_head')}\n${mem}`);
+    // Carried facts: the bond line is said again by the levels below — once is enough. The events stay:
+    // the summary does not always retell every one of them (what you read together, a small evening),
+    // and in a new chat they are what keeps the story whole.
+    if (dossier && settings.trimCarried !== false) {
+        dossier = dossier.split('\n').filter(l => !/^BOND — /.test(l)).join('\n').trim();
+    }
+    // the parts you chose not to send: their lines leave the carried facts
+    if (dossier) {
+        const heads = k => [I18N.en[k], I18N.ru[k]].filter(Boolean).map(h => h + ' — ');
+        const off = [];
+        if (settings.sendBond === false) off.push('BOND — ');
+        if (settings.sendEvents === false) off.push(...heads('tab_evt'));
+        if (settings.sendPeople === false) off.push('NPCs — ');
+        if (settings.sendGifts === false) off.push(...heads('tab_gift'));
+        if (settings.sendPlaces === false) off.push(...heads('tab_loc'));
+        if (settings.sendGloss === false) off.push(...heads('tab_gloss'));
+        if (off.length) dossier = dossier.split('\n').filter(l => !off.some(h => l.startsWith(h))).join('\n').trim();
+    }
     if (dossier) blocks.push(`${t('inj_dossier_head')}\n${dossier}`);
     const anchorList = [];
     const { char } = names();
-    if (state.bond && typeof state.bond.trust === 'number')
+    // one relationship per person: whoever Bonds really knows in this chat is told by Bonds' own line;
+    // the diary keeps the level of everyone else — and of everyone at the start of a new chat
+    if (state.bond && typeof state.bond.trust === 'number' && !bondsTells(char))
         anchorList.push(`${char}: ${state.bond.trust}/100${state.bond.status ? ' — ' + state.bond.status : ''}`);
     // Anchors were unbounded: with 100+ NPCs every one at trust>=50 added a line to EVERY message.
     // Keep the main bond plus the strongest 10 NPC bonds — the ones most worth protecting from regression.
-    const anchorNpcs = state.npcs.filter(n => typeof n.trust === 'number' && n.trust >= 50)
+    // And only of those in the scene: the ones at home are not in this reply. The main character's own
+    // NPC record ("William (Lord Moriarty)") is the main bond again, so it is left out.
+    // only once the chat itself shows who is around: at the start of a new chat everyone's level goes,
+    // so nobody comes back colder than they were
+    const botReplies = (getContext().chat || []).filter(m => m && !m.is_user && !m.is_system).length;
+    const here = settings.anchorSceneOnly !== false && botReplies >= 6 ? sceneNames() : null;
+    const charFirst = firstName(char);
+    const anchorNpcs = state.npcs.filter(n => typeof n.trust === 'number' && n.trust >= 50 && !n.old)
+        .filter(n => settings.trimCarried === false || !(state.bond && typeof state.bond.trust === 'number' && firstName(n.name) === charFirst))
+        .filter(n => !here || here.has(firstName(n.name)))
+        .filter(n => !bondsTells(n.name))
         .sort((a, b) => b.trust - a.trust).slice(0, 10);
     for (const n of anchorNpcs) anchorList.push(`${n.name}: ${n.trust}/100`);
+    if (settings.sendBond === false) anchorList.length = 0;
     if (anchorList.length) blocks.push(`${t('inj_anchor_head')}\n${anchorList.join('; ')}\n${t('inj_anchor_note')}`);
+    const hereCards = whoHereCards();
+    hereIds = new Set(hereCards.map(n => n.id));
+    // a level already in the list above is not said twice
+    const leveled = new Set(anchorNpcs.map(n => n.id));
+    if (hereCards.length) blocks.push(`${t('inj_here_head')}\n${hereCards.map(n => npcCard(n, leveled.has(n.id))).join('\n')}`);
     const extras = retrieveMemory();
     if (extras) blocks.push(`${t('inj_diary_head')}\n${extras}`);
     if (settings.notesToAI && state.notes && state.notes.trim()) blocks.push(`Player notes:\n${state.notes.trim()}`);
-    const hasContent = (mem && settings.injectSummary !== false) || extras || dossier || anchorList.length;
+    const hasContent = (mem && settings.injectSummary !== false) || extras || dossier || anchorList.length || hereCards.length;
     if (!hasContent) { clear(); return; }
     // respect "inject on new chat" only for this chat's own diary; carried memory is meant for new chats
     if (chatIsNew() && settings.injectOnNew === false && !settings.ragToggle && !carried) { clear(); return; }
@@ -1519,6 +1958,18 @@ function matchQ(...fields) {
 }
 function pinBtn(type, id, pinned) {
     return `<button class="rd-btn ${pinned ? 'gold' : ''} rpg-d-pin" data-type="${type}" data-id="${id}" title="${escapeHtml(t('pin_hint'))}">${pinned ? '📌 ' + t('pinned') : '📌 ' + t('pin')}</button>`;
+}
+function oldBtn(type, it) {
+    return `<button class="rd-btn ${it.old ? 'gold' : ''} rpg-d-old" data-type="${type}" data-id="${it.id}" title="${escapeHtml(t('old_hint'))}">${it.old ? '↺ ' + t('old_unmark') : '⌛ ' + t('old_mark')}</button>`;
+}
+function oldNote(it) {
+    return it && it.old ? `<div class="rd-oldnote">⌛ <b>${escapeHtml(t('old_note'))}</b>${it.old.why ? ': ' + escapeHtml(it.old.why) : ''}</div>` : '';
+}
+function toggleOld(type, id) {
+    const it = findItem(type, id); if (!it) return;
+    if (it.old) delete it.old; else it.old = { why: '', ts: Date.now(), day: currentStamp().day, by: 'you' };
+    saveState(); renderPanel(); buildInjection();
+    toastr.info(it.old ? t('old_on') : t('old_off'));
 }
 function togglePin(type, id) {
     const it = findItem(type, id); if (!it) return;
@@ -1643,11 +2094,26 @@ function restoreVersion(id) {
     updateCarry(); saveState(); renderPanel(); buildInjection();
     toastr.success(t('mem_restored'));
 }
+/* The diary's own character sometimes also gets a record among the people ("William (Lord Moriarty)"
+   next to "William ★"). It is the same person: in Bonds he is shown once, as ★, with what that record
+   knows (role, looks, how they met, notes) on his page. The record itself stays in the book. */
+// the diary's own character as one card: what was written on the bond, else what the twin record knows
+function mainCard() {
+    const b = state.bond || {}, tw = mainTwin() || {};
+    const pick = k => (b[k] != null && String(b[k]).trim() !== '') ? b[k] : (tw[k] || '');
+    return { portrait: pick('portrait'), role: pick('role'), look: pick('look'), met: pick('met'), note: tw.note || '' };
+}
+function mainTwin() {
+    if (!state.bond || typeof state.bond.trust !== 'number') return null;
+    const f = firstName(authorName());
+    return f ? state.npcs.find(n => firstName(n.name) === f) || null : null;
+}
 function bondList() {
     const out = [];
+    const twin = mainTwin();
     if (state.bond && typeof state.bond.trust === 'number')
-        out.push({ kind: 'main', name: authorName(), trust: state.bond.trust, status: state.bond.status || '', history: state.bond.history || [], portrait: '' });
-    for (const n of state.npcs) if (typeof n.trust === 'number')
+        out.push({ kind: 'main', name: authorName(), trust: state.bond.trust, status: state.bond.status || '', history: state.bond.history || [], portrait: mainCard().portrait || '', role: mainCard().role || '', twin });
+    for (const n of state.npcs) if (typeof n.trust === 'number' && n !== twin)
         out.push({ kind: 'npc', id: n.id, name: n.name, role: n.role || '', trust: n.trust, status: n.note || '', history: n.trustHistory || [], portrait: n.portrait || '' });
     return out;
 }
@@ -1683,9 +2149,13 @@ function bondR() {
         ${sparkline(fake)}
         <div class="rd-meta" style="margin-top:6px"><b>${t('bond_peak')}:</b> ${peak}%</div>
         ${b.status ? `<div class="rd-rule"></div><div style="font-size:13.5px;line-height:1.6;font-style:italic">${escapeHtml(b.status)}</div>` : ''}
+        ${b.twin && (b.twin.look || b.twin.met || b.twin.note) ? `<div class="rd-rule"></div><div style="font-size:13.5px;line-height:1.55">
+            ${b.twin.look ? `<span class="rd-eyebrow">${t('appearance')}</span><br>${escapeHtml(b.twin.look)}<br><br>` : ''}
+            ${b.twin.met ? `<span class="rd-eyebrow">${t('how_met')}</span><br>${escapeHtml(b.twin.met)}<br><br>` : ''}
+            ${b.twin.note ? `<span class="rd-eyebrow">${t('note')}</span><br><i>${escapeHtml(b.twin.note)}</i>` : ''}</div>` : ''}
         <div class="rd-acts">${b.kind === 'npc'
-            ? `<button class="rd-btn rpg-d-edit" data-type="npc" data-id="${b.id}">${t('act_edit')}</button>`
-            : `<button class="rd-btn rpg-d-edit" data-type="bond">${t('act_edit')}</button>`}</div>
+            ? `<button class="rd-btn rpg-d-edit" data-type="npc" data-id="${b.id}">${t('act_edit')}</button><button class="rd-btn rpg-d-del2" data-type="npc" data-id="${b.id}">${t('act_del')}</button>`
+            : `<button class="rd-btn rpg-d-edit" data-type="bond">${t('act_edit')}</button>${b.twin ? `<button class="rd-btn rpg-d-edit" data-type="npc" data-id="${b.twin.id}">✎ ${escapeHtml(t('dossier'))}</button><button class="rd-btn rpg-d-del2" data-type="npc" data-id="${b.twin.id}" title="${escapeHtml(t('del_twin_hint'))}">✕ ${escapeHtml(t('del_twin'))}</button>` : ''}`}</div>
     </div>`;
 }
 function feedL() {
@@ -1736,7 +2206,7 @@ function evtListL() {
     const head = `<div class="rd-eyebrow">${t('evt_h1')}</div><div class="rd-htitle">${t('tab_evt')}</div>${searchBox()}<div class="rd-rule"></div>`;
     const acts = `<div class="rd-acts"><button class="rd-btn rpg-d-add" data-type="evt">${t('act_add')}</button></div>`;
     if (!list.length) return head + `<div class="rd-empty">${t('no_evt')}</div>` + acts;
-    return head + `<div class="rd-listcol">${list.map((e) => { const i = state.events.indexOf(e); return `<button class="rd-lrow ${i === evtSel ? 'sel' : ''}" data-i="${i}">
+    return head + `<div class="rd-listcol">${list.map((e) => { const i = state.events.indexOf(e); return `<button class="rd-lrow ${i === evtSel ? 'sel' : ''}${e.old ? ' rd-old' : ''}" data-i="${i}">
         <div class="rd-av" style="color:var(--oxblood)">${I(G.spark)}</div>
         <div style="flex:1"><div class="rd-nm">${e.pin ? '📌 ' : ''}${escapeHtml(e.title)}</div><div class="rd-sub">${escapeHtml([e.when, e.where].filter(Boolean).join(' · '))}</div></div></button>`; }).join('')}</div>` + acts;
 }
@@ -1749,7 +2219,8 @@ function evtR() {
         <div class="rd-meta">${e.when ? `<b>${t('f_when')}:</b> ${escapeHtml(e.when)}<br>` : ''}${e.where ? `<b>${t('f_where')}:</b> ${escapeHtml(e.where)}<br>` : ''}${e.who ? `<b>${t('f_who2')}:</b> ${escapeHtml(e.who)}` : ''}</div>
         <div class="rd-rule"></div>
         <div class="rd-entry" style="flex:none;overflow:visible"><p>${escapeHtml(e.what || '')}</p></div>
-        <div class="rd-acts">${pinBtn('evt', e.id, e.pin)}<button class="rd-btn rpg-d-edit" data-type="evt" data-id="${e.id}">${t('act_edit')}</button>
+        ${oldNote(e)}
+        <div class="rd-acts">${pinBtn('evt', e.id, e.pin)}${oldBtn('evt', e)}<button class="rd-btn rpg-d-edit" data-type="evt" data-id="${e.id}">${t('act_edit')}</button>
         <button class="rd-btn rpg-d-del" data-type="evt" data-id="${e.id}">${t('act_del')}</button></div>`;
 }
 
@@ -1759,9 +2230,9 @@ function npcListL() {
     const head = `<div class="rd-eyebrow">${t('dossier')}</div><div class="rd-htitle">${t('known_faces')}</div>${searchBox()}<div class="rd-rule"></div>`;
     const acts = `<div class="rd-acts"><button class="rd-btn rpg-d-add" data-type="npc">${t('act_add')}</button></div>`;
     if (!list.length) return head + `<div class="rd-empty">${t('no_npc')}</div>` + acts;
-    return head + `<div class="rd-listcol">${list.map((n) => { const i = state.npcs.indexOf(n); return `<button class="rd-lrow ${i === npcSel ? 'sel' : ''}" data-i="${i}">
+    return head + `<div class="rd-listcol">${list.map((n) => { const i = state.npcs.indexOf(n); return `<button class="rd-lrow ${i === npcSel ? 'sel' : ''}${n.old ? ' rd-old' : ''}" data-i="${i}">
         <div class="rd-av">${n.portrait ? `<img src="${escapeHtml(n.portrait)}">` : I(G.user)}</div>
-        <div><div class="rd-nm">${n.pin ? '📌 ' : ''}${escapeHtml(n.name)}</div><div class="rd-sub">${escapeHtml(n.role || '')}</div></div></button>`; }).join('')}</div>` + acts;
+        <div><div class="rd-nm">${n.pin ? '📌 ' : ''}${escapeHtml(n.name)}${n === mainTwin() ? ' ★' : ''}</div><div class="rd-sub">${escapeHtml(n.role || '')}</div></div></button>`; }).join('')}</div>` + acts;
 }
 function npcR() {
     const n = state.npcs[npcSel]; if (!n) return `<div class="rd-locked"><div class="rd-q">?</div><p>${t('no_npc')}</p></div>`;
@@ -1776,7 +2247,8 @@ function npcR() {
             ${n.met ? `<span class="rd-eyebrow">${t('how_met')}</span><br>${escapeHtml(n.met)}<br><br>` : ''}
             ${n.note ? `<span class="rd-eyebrow">${t('note')}</span><br><i>${escapeHtml(n.note)}</i>` : ''}
         </div>
-        <div class="rd-acts">${pinBtn('npc', n.id, n.pin)}<button class="rd-btn rpg-d-edit" data-type="npc" data-id="${n.id}">${t('act_edit')}</button>
+        ${oldNote(n)}
+        <div class="rd-acts">${pinBtn('npc', n.id, n.pin)}${oldBtn('npc', n)}<button class="rd-btn rpg-d-edit" data-type="npc" data-id="${n.id}">${t('act_edit')}</button>
         <button class="rd-btn rpg-d-del" data-type="npc" data-id="${n.id}">${t('act_del')}</button></div>`;
 }
 
@@ -1785,7 +2257,7 @@ function locGridL() {
     const head = `<div class="rd-eyebrow">${t('travel_log')}</div><div class="rd-htitle">${t('locations')}</div><div class="rd-rule"></div>`;
     const acts = `<div class="rd-acts"><button class="rd-btn rpg-d-add" data-type="loc">${t('act_add')}</button></div>`;
     if (!state.locations.length) return head + `<div class="rd-empty">${t('no_loc')}</div>` + acts;
-    return head + `<div class="rd-grid">${state.locations.map((l, i) => `<div class="rd-gcell ${l.known ? '' : 'lock'} ${i === locSel ? 'sel' : ''}" data-i="${i}">
+    return head + `<div class="rd-grid">${state.locations.map((l, i) => `<div class="rd-gcell ${l.known ? '' : 'lock'} ${i === locSel ? 'sel' : ''}${l.old ? ' rd-old' : ''}" data-i="${i}">
         <div class="rd-disc">${l.known ? (l.portrait ? `<img src="${escapeHtml(l.portrait)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">` : I(G[l.icon] || G.pin, 1.4)) : '<span style="font-family:Caveat;font-size:26px;color:#b6a479">?</span>'}</div>
         <div class="rd-gl">${l.known ? escapeHtml(l.name) : '???'}</div></div>`).join('')}</div>` + acts;
 }
@@ -1797,7 +2269,8 @@ function locR() {
         <div class="rd-rule"></div>
         <div class="rd-band">${escapeHtml(l.name)}<span class="rd-mk"></span></div>
         <p style="font-size:14px;line-height:1.6;margin-top:10px">${escapeHtml(l.desc || '')}</p>
-        <div class="rd-acts">${pinBtn('loc', l.id, l.pin)}<button class="rd-btn rpg-d-edit" data-type="loc" data-id="${l.id}">${t('act_edit')}</button>
+        ${oldNote(l)}
+        <div class="rd-acts">${pinBtn('loc', l.id, l.pin)}${oldBtn('loc', l)}<button class="rd-btn rpg-d-edit" data-type="loc" data-id="${l.id}">${t('act_edit')}</button>
         <button class="rd-btn rpg-d-del" data-type="loc" data-id="${l.id}">${t('act_del')}</button></div>`;
 }
 
@@ -1806,7 +2279,7 @@ function giftsL() {
     const head = `<div class="rd-eyebrow">${t('gifts_h1')}</div><div class="rd-htitle">${t('gifts_h2')}</div><div class="rd-rule"></div>`;
     const acts = `<div class="rd-acts"><button class="rd-btn rpg-d-add" data-type="gift">${t('act_add')}</button></div>`;
     if (!state.gifts.length) return head + `<div class="rd-empty">${t('no_gift')}</div>` + acts;
-    return head + `<div class="rd-listcol">${state.gifts.map((g, i) => `<button class="rd-lrow ${i === giftSel ? 'sel' : ''}" data-i="${i}">
+    return head + `<div class="rd-listcol">${state.gifts.map((g, i) => `<button class="rd-lrow ${i === giftSel ? 'sel' : ''}${g.old ? ' rd-old' : ''}" data-i="${i}">
         <div class="rd-av" style="color:${g.dir === '→' ? 'var(--green)' : 'var(--oxblood)'}">${I(G.gift)}</div>
         <div><div class="rd-nm">${escapeHtml(g.item)}</div><div class="rd-sub">${escapeHtml(g.who || '')}${g.when ? ' · ' + escapeHtml(g.when) : ''}</div></div></button>`).join('')}</div>` + acts;
 }
@@ -1815,7 +2288,8 @@ function giftsR() {
     return `<div class="rd-fade"><div class="rd-photo" style="transform:rotate(1deg);width:150px;margin:0 auto 8px"><div class="rd-pic" style="height:120px">${I(G.gift, 1.2)}</div><div class="rd-cap">${escapeHtml(g.item)}</div></div>
         <div class="rd-band">${t('circumstances')}<span class="rd-mk"></span></div>
         <p style="font-size:13.5px;line-height:1.6;margin-top:10px"><b>${escapeHtml(g.who || '')}</b><br>${escapeHtml(g.when || '')}<br><br><i>${escapeHtml(g.why || '')}</i></p>
-        <div class="rd-acts">${pinBtn('gift', g.id, g.pin)}<button class="rd-btn rpg-d-edit" data-type="gift" data-id="${g.id}">${t('act_edit')}</button>
+        ${oldNote(g)}
+        <div class="rd-acts">${pinBtn('gift', g.id, g.pin)}${oldBtn('gift', g)}<button class="rd-btn rpg-d-edit" data-type="gift" data-id="${g.id}">${t('act_edit')}</button>
         <button class="rd-btn rpg-d-del" data-type="gift" data-id="${g.id}">${t('act_del')}</button></div>
         <div class="rd-genstamp" style="margin-top:12px">${I(G.spark)}${t('gift_link')}</div>`;
 }
@@ -1825,9 +2299,10 @@ function glossL() {
     const head = `<div class="rd-eyebrow">${t('world_terms')}</div><div class="rd-htitle">${t('glossary')}</div><div class="rd-rule"></div>`;
     const acts = `<div class="rd-acts"><button class="rd-btn rpg-d-add" data-type="gloss">${t('act_add')}</button></div>`;
     const body = state.glossary.length
-        ? `<div class="rd-listcol">${state.glossary.map(g => `<div class="rd-lrow" style="cursor:default;align-items:flex-start">
+        ? `<div class="rd-listcol">${state.glossary.map(g => `<div class="rd-lrow${g.old ? ' rd-old' : ''}" style="cursor:default;align-items:flex-start">
             <div style="flex:1"><div class="rd-nm" style="color:var(--oxblood)">${escapeHtml(g.term)}</div>
             <div style="font-size:13px;line-height:1.5;margin-top:3px">${escapeHtml(g.def || '')}</div></div>
+            <button class="rd-mini rpg-d-old" data-type="gloss" data-id="${g.id}" title="${escapeHtml(g.old ? t('old_unmark') : t('old_mark'))}">${g.old ? '↺' : '⌛'}</button>
             <button class="rd-mini rpg-d-edit" data-type="gloss" data-id="${g.id}">✎</button>
             <button class="rd-mini rpg-d-del" data-type="gloss" data-id="${g.id}">✕</button></div>`).join('')}</div>`
         : `<div class="rd-empty">${t('no_gloss')}</div>`;
@@ -1949,6 +2424,9 @@ function applyDossierData(d) {
         }
         state.entries.sort((a, b) => (a.ts || 0) - (b.ts || 0));
     }
+    // outdated marks travel too: what stopped being true does not come back as new in the next chat
+    const carryOld = (arr, key, field) => { if (Array.isArray(arr)) for (const x of arr) if (x && x.old) { const y = state[key].find(z => norm(z[field]) === norm(x[field])); if (y && !y.pin) y.old = x.old; } };
+    carryOld(d.events, 'events', 'title'); carryOld(d.npcs, 'npcs', 'name'); carryOld(d.gifts, 'gifts', 'item'); carryOld(d.locations, 'locations', 'name'); carryOld(d.glossary, 'glossary', 'term');
     // keep the pins that were set in the source chat
     if (Array.isArray(d.events)) for (const e of d.events) if (e.pin) { const x = state.events.find(y => norm(y.title) === norm(e.title)); if (x) x.pin = true; }
     if (Array.isArray(d.npcs)) for (const n of d.npcs) if (n.pin) { const x = state.npcs.find(y => norm(y.name) === norm(n.name)); if (x) x.pin = true; }
@@ -1999,6 +2477,7 @@ function bondEditForm() {
             <input type="number" data-f="trust" min="0" max="100" value="${typeof b.trust === 'number' ? b.trust : ''}">
             <label>${t('note')}</label>
             <textarea data-f="status" style="min-height:120px">${escapeHtml(b.status || '')}</textarea>
+            ${(() => { const m = mainCard(); return field(t('f_role'), 'role', m.role) + field(t('f_look'), 'look', m.look, 'area') + field(t('f_met'), 'met', m.met, 'area') + portraitRow(m.portrait); })()}
         </div>
         <div class="rd-acts"><button class="rd-btn prim rpg-d-savef">${t('act_save')}</button><button class="rd-btn rpg-d-cancelf">${t('act_cancel')}</button></div>`;
 }
@@ -2038,13 +2517,78 @@ function editForm() {
 }
 
 /* ============================================================ RENDER */
-function buildL() { return [feedL, memL, bondL, evtListL, npcListL, locGridL, giftsL, glossL][tab](); }
-function buildR() { return [() => fullR(state.entries[ei]), memR, bondR, evtR, npcR, locR, giftsR, notesR][tab](); }
+function buildL() { return [feedL, memL, settings.mergePeople !== false ? peopleL : bondL, evtListL, npcListL, locGridL, giftsL, glossL][tab](); }
+function buildR() { return [() => fullR(state.entries[ei]), memR, settings.mergePeople !== false ? peopleR : bondR, evtR, npcR, locR, giftsR, notesR][tab](); }
+/* ---- PEOPLE: "Bonds" and "NPCs" as one page — the list with the relationship bars, and on the right the
+   whole person: portrait, role, the level and how it moved, what Bonds says right now, looks, how you met,
+   notes, and the buttons of both old pages. The diary's own character (★) comes first, once. ---- */
+function peopleList() {
+    const out = [];
+    const twin = mainTwin();
+    if (state.bond && typeof state.bond.trust === 'number')
+        out.push({ kind: 'main', name: authorName(), trust: state.bond.trust, history: state.bond.history || [], twin, rec: Object.assign({}, mainCard(), twin ? { pin: twin.pin } : {}) });
+    for (const n of state.npcs) if (n !== twin) out.push({ kind: 'npc', id: n.id, name: n.name, trust: typeof n.trust === 'number' ? n.trust : null, history: n.trustHistory || [], rec: n });
+    return out.filter(p => p.kind === 'main' || matchQ(p.name, p.rec && p.rec.role, p.rec && p.rec.look, p.rec && p.rec.met, p.rec && p.rec.note));
+}
+function peopleL() {
+    const list = peopleList();
+    const head = `<div class="rd-eyebrow">${t('people_h1')}</div><div class="rd-htitle">${t('tab_people')}</div>${searchBox()}<div class="rd-rule"></div>`;
+    const acts = `<div class="rd-acts"><button class="rd-btn rpg-d-add" data-type="npc">${t('act_add')}</button></div>`;
+    if (!list.length) return head + `<div class="rd-empty">${t('no_npc')}</div>` + acts;
+    if (bondSel >= list.length) bondSel = 0;
+    return head + `<div class="rd-listcol">${list.map((b, i) => {
+        const r = b.rec || {};
+        const peak = (b.history || []).reduce((m, p) => Math.max(m, p.v), b.trust || 0);
+        const cold = typeof b.trust === 'number' && peak - b.trust >= 25;
+        return `<button class="rd-lrow ${i === bondSel ? 'sel' : ''}${r.old ? ' rd-old' : ''}" data-i="${i}">
+            <div class="rd-av">${r.portrait ? `<img src="${escapeHtml(r.portrait)}">` : I(b.kind === 'main' ? G.heart : G.user)}</div>
+            <div style="flex:1;min-width:0">
+                <div class="rd-nm">${r.pin ? '📌 ' : ''}${escapeHtml(b.name)}${b.kind === 'main' ? ' ★' : ''}${cold ? ' ⚠' : ''}</div>
+                ${typeof b.trust === 'number' ? `<div class="rd-bmini">${bar(b.trust, b.kind === 'main' ? 'linear-gradient(90deg,#8a2c23,#c1663a)' : 'linear-gradient(90deg,#5e3a96,#7e57c2)')}</div>` : `<div class="rd-sub">${escapeHtml(r.role || '')}</div>`}
+            </div>
+            ${typeof b.trust === 'number' ? `<span class="rd-bpct">${b.trust}%</span>` : ''}
+        </button>`;
+    }).join('')}</div>` + acts;
+}
+function liveBondsHtml(name) {
+    const d = bondsLive(name);
+    if (!d) return '';
+    return `<div class="rd-live"><div class="rd-eyebrow">💞 ${escapeHtml(t('live_h'))}</div>
+        <div class="rd-live-st"><b>${escapeHtml(d.stage || '')}</b>${d.conflict ? ` · ⚔ ${escapeHtml(t('live_conflict'))}` : ''} <span class="rd-live-lv">${escapeHtml(t('live_level'))}: ${d.level}%</span></div>
+        ${(d.toward || []).length ? `<div class="rd-live-tw">${escapeHtml((d.toward || []).join('; '))}</div>` : ''}
+        ${d.now ? `<div class="rd-live-now">${escapeHtml(t('live_now'))}: ${escapeHtml(d.now)}</div>` : ''}</div>`;
+}
+function peopleR() {
+    const list = peopleList();
+    const b = list[bondSel];
+    if (!b) return `<div class="rd-locked"><div class="rd-q">?</div><p>${t('no_npc')}</p></div>`;
+    const n = b.rec || {};
+    const color = b.kind === 'main' ? 'linear-gradient(90deg,#8a2c23,#c1663a)' : 'linear-gradient(90deg,#5e3a96,#7e57c2)';
+    const peak = (b.history || []).reduce((m, p) => Math.max(m, p.v), b.trust || 0);
+    const status = b.kind === 'main' ? (state.bond && state.bond.status) || '' : '';
+    return `<div class="rd-fade"><span class="rd-clip" style="top:-8px;right:44px;transform:rotate(-7deg)"></span>
+        <div class="rd-photo" style="transform:rotate(1.5deg);width:150px;margin:0 auto 4px"><div class="rd-pic" style="height:140px">${n.portrait ? `<img src="${escapeHtml(n.portrait)}">` : I(b.kind === 'main' ? G.heart : G.user, 1.3)}</div><div class="rd-cap">${escapeHtml(b.name)}</div></div>
+        ${n.role ? `<div class="rd-meta"><b>${t('occupation')}:</b> ${escapeHtml(n.role)}</div>` : ''}
+        ${typeof b.trust === 'number' ? statRow(b.kind === 'main' ? t('bond_label', { name: b.name }) : t('relationship'), b.trust, color) + sparkline({ trust: b.trust, trustHistory: b.history }) + `<div class="rd-meta" style="margin-top:6px"><b>${t('bond_peak')}:</b> ${peak}%</div>` : ''}
+        ${liveBondsHtml(b.name)}
+        ${status ? `<div class="rd-rule"></div><div style="font-size:13.5px;line-height:1.6;font-style:italic">${escapeHtml(status)}</div>` : ''}
+        ${n.look || n.met || n.note ? `<div class="rd-rule"></div><div style="font-size:13.5px;line-height:1.55">
+            ${n.look ? `<span class="rd-eyebrow">${t('appearance')}</span><br>${escapeHtml(n.look)}<br><br>` : ''}
+            ${n.met ? `<span class="rd-eyebrow">${t('how_met')}</span><br>${escapeHtml(n.met)}<br><br>` : ''}
+            ${n.note ? `<span class="rd-eyebrow">${t('note')}</span><br><i>${escapeHtml(n.note)}</i>` : ''}</div>` : ''}
+        ${b.kind === 'npc' ? oldNote(n) : ''}
+        <div class="rd-acts">${b.kind === 'main'
+            ? `<button class="rd-btn rpg-d-edit" data-type="bond">${t('act_edit')}</button>${b.twin ? `<button class="rd-btn rpg-d-edit" data-type="npc" data-id="${b.twin.id}">✎ ${escapeHtml(t('dossier'))}</button><button class="rd-btn rpg-d-del2" data-type="npc" data-id="${b.twin.id}" title="${escapeHtml(t('del_twin_hint'))}">✕ ${escapeHtml(t('del_twin'))}</button>` : ''}`
+            : `${pinBtn('npc', n.id, n.pin)}${oldBtn('npc', n)}<button class="rd-btn rpg-d-edit" data-type="npc" data-id="${n.id}">${t('act_edit')}</button><button class="rd-btn rpg-d-del2" data-type="npc" data-id="${n.id}">${t('act_del')}</button>`}</div>
+    </div>`;
+}
 
 function renderPanel() {
     const root = document.getElementById('rpg-diary-root');
     if (!root || !state) return;
-    document.getElementById('rd-tabs').innerHTML = TABS.map((tb, i) => `<button class="rd-tab ${tb[2]} ${i === tab ? 'on' : ''}" data-t="${i}">${escapeHtml(t(tb[0]))}</button>`).join('');
+    const merged = settings.mergePeople !== false;
+    if (merged && tab === 4) tab = 2;                     // the NPC page lives inside "People" now
+    document.getElementById('rd-tabs').innerHTML = TABS.map((tb, i) => (merged && i === 4) ? '' : `<button class="rd-tab ${tb[2]} ${i === tab ? 'on' : ''}" data-t="${i}">${escapeHtml(t(merged && i === 2 ? 'tab_people' : tb[0]))}</button>`).join('');
     const pageL = document.getElementById('rd-pageL'), pageR = document.getElementById('rd-pageR');
     // Both pages are rebuilt from scratch on every click, which throws the list back
     // to the top: pick the fortieth NPC and you are returned to the first. Remember
@@ -2110,7 +2654,15 @@ function wire() {
     root.querySelectorAll('.rpg-d-add').forEach(b => b.onclick = () => openEditor(b.dataset.type, null));
     root.querySelectorAll('.rpg-d-edit').forEach(b => b.onclick = () => openEditor(b.dataset.type, b.dataset.id));
     root.querySelectorAll('.rpg-d-del').forEach(b => b.onclick = () => delItem(b.dataset.type, b.dataset.id));
+    // from Bonds: a person's whole record goes, so it asks once more — on the button itself, no browser dialog
+    root.querySelectorAll('.rpg-d-del2').forEach(b => b.onclick = () => {
+        if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.dataset.was = b.textContent; b.textContent = t('del_sure'); setTimeout(() => { if (b.isConnected && b.dataset.sure === '1') { b.dataset.sure = ''; b.textContent = b.dataset.was; } }, 3000); return; }
+        delItem(b.dataset.type, b.dataset.id);
+        bondSel = Math.min(bondSel, Math.max(0, (settings.mergePeople !== false ? peopleList() : bondList()).length - 1));
+        renderPanel();
+    });
     root.querySelectorAll('.rpg-d-pin').forEach(b => b.onclick = () => togglePin(b.dataset.type, b.dataset.id));
+    root.querySelectorAll('.rpg-d-old').forEach(b => b.onclick = () => toggleOld(b.dataset.type, b.dataset.id));
     const sv = root.querySelector('.rpg-d-savef'); if (sv) sv.onclick = saveEditor;
     const cn = root.querySelector('.rpg-d-cancelf'); if (cn) cn.onclick = () => { editing = null; renderPanel(); };
     const notes = root.querySelector('.rpg-d-notes'); if (notes) notes.oninput = () => { state.notes = notes.value; saveState(false); };
@@ -2221,6 +2773,8 @@ function saveEditor() {
             state.bond.trust = v;
         }
         state.bond.status = (o.status || '').trim();
+        // the card of the diary's own character, like everyone else's
+        ['role', 'look', 'met', 'portrait'].forEach(k => { if (o[k] != null) state.bond[k] = String(o[k]).trim(); });
         editing = null; saveState(); renderPanel(); buildInjection(); return;
     }
     const o = readForm(); const type = editing.type;
@@ -2468,6 +3022,12 @@ function importDiary() {
 /* ============================================================ SETTINGS UI */
 function settingsHtml() {
     const opt = (v, cur, label) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${escapeHtml(label)}</option>`;
+    // frames with an emoji each, the way the Map, the Lens and the Status Bar have them
+    const sub = (title, body) => `<div class="rd-sub"><div class="rd-subhead">${title}</div>${body}</div>`;
+    const chk = (id, key) => `<label class="checkbox_label"><input type="checkbox" id="${id}"> <span>${escapeHtml(t(key))}</span></label>`;
+    const num = (id, key, attrs) => `<div class="rd-srow"><label for="${id}">${escapeHtml(t(key).replace(/[:：]\s*$/, ''))}</label><input id="${id}" class="text_pole" type="number" ${attrs}></div>`;
+    const field = (id, key, type, ph) => `<div class="rd-srow rd-field"><label for="${id}">${escapeHtml(t(key).replace(/[:：]\s*$/, ''))}</label><input id="${id}" class="text_pole" type="${type}"${ph ? ` placeholder="${escapeHtml(ph)}"` : ''}></div>`;
+    const note = key => `<div class="rd-hint">${escapeHtml(t(key))}</div>`;
     return `<div class="rpg-diary-settings">
         <div class="inline-drawer">
             <!-- The icon is a font glyph, exactly as every other extension in the suite
@@ -2477,65 +3037,46 @@ function settingsHtml() {
                  different in the settings list. -->
             <div class="inline-drawer-toggle inline-drawer-header"><b><i class="fa-solid fa-feather-pointed"></i> ${escapeHtml(t('set_title'))}</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div>
             <div class="inline-drawer-content">
-                <label class="checkbox_label"><input type="checkbox" id="rpgd-enable"> ${escapeHtml(t('set_enable'))}</label>
-                <div class="rd-set-row"><label>${escapeHtml(t('set_lang'))}</label>
-                    <select id="rpgd-lang" class="text_pole widthNatural">${opt('en', settings.language, 'English')}${opt('ru', settings.language, 'Русский')}</select>
-                    <label style="margin-left:10px">${escapeHtml(t('set_output_lang'))}</label>
-                    <select id="rpgd-outlang" class="text_pole widthNatural">${opt('follow', settings.outputLang, t('lang_follow'))}${opt('en', settings.outputLang, t('lang_en'))}${opt('ru', settings.outputLang, t('lang_ru'))}</select>
+                <div class="rd-top">
+                    <label class="checkbox_label"><input type="checkbox" id="rpgd-enable"> <span>${escapeHtml(t('set_enable'))}</span></label>
                 </div>
-                <div class="rd-set-row"><button id="rpgd-export" class="menu_button">⤓ ${escapeHtml(t('export_btn'))}</button><button id="rpgd-import" class="menu_button">⤒ ${escapeHtml(t('import_btn'))}</button></div>
-                <div class="rd-set-row"><button id="rpgd-exportall" class="menu_button">⤓⤓ ${escapeHtml(t('exportall_btn'))}</button><button id="rpgd-importall" class="menu_button">⤒⤒ ${escapeHtml(t('importall_btn'))}</button></div>
-                <hr><b>${escapeHtml(t('set_api'))}</b>
-                <div class="rd-set-row"><label style="min-width:70px">${escapeHtml(t('set_url'))}</label><input id="rpgd-url" class="text_pole" style="flex:1" type="text"></div>
-                <div class="rd-set-row"><label style="min-width:70px">${escapeHtml(t('set_key'))}</label><input id="rpgd-key" class="text_pole" style="flex:1" type="password"></div>
-                <div class="rd-set-row"><label style="min-width:70px">${escapeHtml(t('set_model'))}</label><input id="rpgd-model" class="text_pole" style="flex:1" type="text"></div>
-                <div class="rd-set-row" id="rpgd-borrow" style="display:none"><small style="opacity:.75"></small></div>
-                <div class="rd-set-row"><label style="min-width:70px">${escapeHtml(t('set_temp'))}</label><input id="rpgd-temp" class="text_pole" style="width:70px" type="number" min="0" max="2" step="0.1">
-                    <label>${escapeHtml(t('set_maxtok'))}</label><input id="rpgd-maxtok" class="text_pole" style="width:90px" type="number" min="1000" max="64000" step="1000"></div>
-                <div class="rd-set-row" style="font-size:11px;opacity:.75">${escapeHtml(t('set_maxtok_note'))}</div>
-                <hr><b>${escapeHtml(t('set_inject_h'))}</b>
-                <label class="checkbox_label"><input type="checkbox" id="rpgd-injmemory"> ${escapeHtml(t('set_injmemory'))}</label>
-                <label class="checkbox_label"><input type="checkbox" id="rpgd-injsummary"> ${escapeHtml(t('set_injsummary'))}</label>
-                <div class="rd-set-row" style="font-size:11px;opacity:.75">${escapeHtml(t('set_injmemory_note'))}</div>
-                <div class="rd-set-row"><label>${escapeHtml(t('set_injmode'))}</label>
-                    <select id="rpgd-injmode" class="text_pole widthNatural">${opt('depth', settings.injectMode, t('inj_depth'))}${opt('top', settings.injectMode, t('inj_top'))}${opt('both', settings.injectMode, t('inj_both'))}</select></div>
-                <label class="checkbox_label"><input type="checkbox" id="rpgd-injnew"> ${escapeHtml(t('set_injnew'))}</label>
-                <label class="checkbox_label"><input type="checkbox" id="rpgd-injdiary"> ${escapeHtml(t('set_injdiary'))}</label>
-                <label class="checkbox_label"><input type="checkbox" id="rpgd-injfull"> ${escapeHtml(t('set_injfull'))}</label>
-                <label class="checkbox_label"><input type="checkbox" id="rpgd-ragtoggle"> ${escapeHtml(t('set_ragtoggle'))}</label>
-                <label class="checkbox_label"><input type="checkbox" id="rpgd-notesai"> ${escapeHtml(t('set_notes_ai'))}</label>
-                <div class="rd-set-row"><label>${escapeHtml(t('set_injdepth'))}</label><input id="rpgd-injdepth" class="text_pole" style="width:60px" type="number" min="0" max="20">
-                    <label>${escapeHtml(t('set_injentries'))}</label><input id="rpgd-injentries" class="text_pole" style="width:60px" type="number" min="0" max="12">
-                    <label>${escapeHtml(t('set_injbudget'))}</label><input id="rpgd-injbudget" class="text_pole" style="width:80px" type="number" min="200" max="6000"></div>
-                <hr><b>${escapeHtml(t('set_memory_h'))}</b>
-                <div class="rd-set-row"><label>${escapeHtml(t('set_carrymode'))}</label>
-                    <select id="rpgd-carrymode" class="text_pole widthNatural">${opt('off', settings.carryMode, t('carry_off'))}${opt('char', settings.carryMode, t('carry_char'))}${opt('all', settings.carryMode, t('carry_all'))}</select></div>
-                <label class="checkbox_label"><input type="checkbox" id="rpgd-carrydossier"> ${escapeHtml(t('set_carrydossier'))}</label>
-                <label class="checkbox_label"><input type="checkbox" id="rpgd-carryentries"> ${escapeHtml(t('set_carryentries'))}</label>
-                <label class="checkbox_label"><input type="checkbox" id="rpgd-carryscenes"> ${escapeHtml(t('set_carryscenes'))}</label>
-                <div class="rd-set-row" style="font-size:11px;opacity:.75">${escapeHtml(t('set_carryscenes_note'))}</div>
-                <label class="checkbox_label"><input type="checkbox" id="rpgd-ragdossiers"> ${escapeHtml(t('set_ragdossiers'))}</label>
-                <label class="checkbox_label"><input type="checkbox" id="rpgd-incremental"> ${escapeHtml(t('set_incremental'))}</label>
-                <hr><b>${escapeHtml(t('set_auto_h'))}</b>
-                <label class="checkbox_label"><input type="checkbox" id="rpgd-autosum"> ${escapeHtml(t('set_autosum'))}</label>
-                <label class="checkbox_label"><input type="checkbox" id="rpgd-autoentry"> ${escapeHtml(t('set_autoentry'))}</label>
-                <div class="rd-set-row"><label>${escapeHtml(t('set_autodays'))}</label><input id="rpgd-autodays" class="text_pole" style="width:60px" type="number" min="1" max="30"></div>
-                <div class="rd-set-row"><label>${escapeHtml(t('set_autoevery'))}</label><input id="rpgd-autoevery" class="text_pole" style="width:60px" type="number" min="0" max="200"></div>
-                <div class="rd-set-row" style="font-size:11px;opacity:.75">${escapeHtml(t('set_autoevery_note'))}</div>
-                <label class="checkbox_label"><input type="checkbox" id="rpgd-locknew"> ${escapeHtml(t('set_locknew'))}</label>
-                <div class="rd-set-row"><label>${escapeHtml(t('set_librarymode'))}</label>
-                    <select id="rpgd-librarymode" class="text_pole widthNatural">${opt('update', settings.libraryMode, t('lib_update'))}${opt('append', settings.libraryMode, t('lib_append'))}</select></div>
-                <hr><b>${escapeHtml(t('set_embed_h'))}</b>
-                <label class="checkbox_label"><input type="checkbox" id="rpgd-useembed"> ${escapeHtml(t('set_useembed'))}</label>
-                <div class="rd-set-row"><label style="min-width:70px">${escapeHtml(t('set_url'))}</label><input id="rpgd-emburl" class="text_pole" style="flex:1" type="text" placeholder="${escapeHtml(t('set_embed_url_ph'))}"></div>
-                <div class="rd-set-row"><label style="min-width:70px">${escapeHtml(t('set_key'))}</label><input id="rpgd-embkey" class="text_pole" style="flex:1" type="password" placeholder="${escapeHtml(t('set_embed_url_ph'))}"></div>
-                <div class="rd-set-row"><label style="min-width:70px">${escapeHtml(t('set_model'))}</label><input id="rpgd-embmodel" class="text_pole" style="flex:1" type="text"></div>
-                <div class="rd-set-row"><button id="rpgd-embtest" class="menu_button">${escapeHtml(t('embed_test'))}</button></div>
-                <div class="rd-set-row" style="font-size:11px;opacity:.75">${escapeHtml(t('set_embed_note'))}</div>
-                <hr><b>${escapeHtml(t('set_scene_h'))}</b>
-                <label class="checkbox_label"><input type="checkbox" id="rpgd-scenesearch"> ${escapeHtml(t('set_scenesearch'))}</label>
-                <div class="rd-set-row"><label>${escapeHtml(t('set_scenemax'))}</label><input id="rpgd-scenemax" class="text_pole" style="width:60px" type="number" min="0" max="5">
-                    <label>${escapeHtml(t('set_sceneskip'))}</label><input id="rpgd-sceneskip" class="text_pole" style="width:60px" type="number" min="0" max="200"></div>
+                <div class="rd-srow"><label for="rpgd-lang">🌐 ${escapeHtml(t('set_lang').replace(/[:：]\s*$/, ''))}</label><select id="rpgd-lang" class="text_pole">${opt('en', settings.language, 'English')}${opt('ru', settings.language, 'Русский')}</select></div>
+                <div class="rd-srow"><label for="rpgd-outlang">✍️ ${escapeHtml(t('set_output_lang').replace(/[:：]\s*$/, ''))}</label><select id="rpgd-outlang" class="text_pole">${opt('follow', settings.outputLang, t('lang_follow'))}${opt('en', settings.outputLang, t('lang_en'))}${opt('ru', settings.outputLang, t('lang_ru'))}</select></div>
+                ${sub(`💾 ${escapeHtml(t('set_files_h'))}`, `<div class="rd-tools">
+                    <button id="rpgd-export" class="menu_button rd-tool">⤓ ${escapeHtml(t('export_btn'))}</button><button id="rpgd-import" class="menu_button rd-tool">⤒ ${escapeHtml(t('import_btn'))}</button>
+                    <button id="rpgd-exportall" class="menu_button rd-tool">⤓⤓ ${escapeHtml(t('exportall_btn'))}</button><button id="rpgd-importall" class="menu_button rd-tool">⤒⤒ ${escapeHtml(t('importall_btn'))}</button></div>`)}
+                ${sub(`🔌 ${escapeHtml(t('set_api'))}`, `
+                    ${field('rpgd-url', 'set_url', 'text')}${field('rpgd-key', 'set_key', 'password')}${field('rpgd-model', 'set_model', 'text')}
+                    <div class="rd-srow" id="rpgd-borrow" style="display:none"><small style="opacity:.75"></small></div>
+                    ${num('rpgd-temp', 'set_temp', 'min="0" max="2" step="0.1"')}${num('rpgd-maxtok', 'set_maxtok', 'min="1000" max="64000" step="1000"')}
+                    ${note('set_maxtok_note')}`)}
+                ${sub(`🧠 ${escapeHtml(t('set_inject_h'))}`, `
+                    ${chk('rpgd-injmemory', 'set_injmemory')}${chk('rpgd-injsummary', 'set_injsummary')}${note('set_injmemory_note')}
+                    <div class="rd-srow"><label for="rpgd-injmode">${escapeHtml(t('set_injmode').replace(/[:：]\s*$/, ''))}</label><select id="rpgd-injmode" class="text_pole">${opt('depth', settings.injectMode, t('inj_depth'))}${opt('top', settings.injectMode, t('inj_top'))}${opt('both', settings.injectMode, t('inj_both'))}</select></div>
+                    ${chk('rpgd-injnew', 'set_injnew')}${chk('rpgd-injdiary', 'set_injdiary')}${chk('rpgd-injfull', 'set_injfull')}${chk('rpgd-ragtoggle', 'set_ragtoggle')}${chk('rpgd-notesai', 'set_notes_ai')}
+                    ${chk('rpgd-bondssync', 'set_bondssync')}${chk('rpgd-mergepeople', 'set_mergepeople')}${chk('rpgd-whohere', 'set_whohere')}${chk('rpgd-anchorscene', 'set_anchor_scene')}${chk('rpgd-trimcarried', 'set_trim_carried')}
+                    ${num('rpgd-injdepth', 'set_injdepth', 'min="0" max="20"')}${num('rpgd-injentries', 'set_injentries', 'min="0" max="12"')}${num('rpgd-injbudget', 'set_injbudget', 'min="200" max="6000"')}`)}
+                ${sub(`📤 ${escapeHtml(t('set_send_h'))}`, `<div class="rd-sendgrid">
+                    ${chk('rpgd-sendbond', 'send_bond')}${chk('rpgd-sendevents', 'send_events')}${chk('rpgd-sendpeople', 'send_people')}
+                    ${chk('rpgd-sendgifts', 'send_gifts')}${chk('rpgd-sendplaces', 'send_places')}${chk('rpgd-sendgloss', 'send_gloss')}</div>${note('set_send_note')}`)}
+                ${sub(`🔎 ${escapeHtml(t('set_find_h'))}`, `
+                    ${chk('rpgd-minscore', 'set_minscore')}${chk('rpgd-skipknown', 'set_skipknown')}${chk('rpgd-scenesplit', 'set_scenesplit')}${chk('rpgd-ctxheaders', 'set_ctxheaders')}
+                    ${chk('rpgd-dedupe', 'set_dedupe')}${chk('rpgd-recency', 'set_recency')}${chk('rpgd-outdated', 'set_outdated')}${chk('rpgd-rerank', 'set_rerank')}${note('set_find_note')}`)}
+                ${sub(`📦 ${escapeHtml(t('set_memory_h'))}`, `
+                    <div class="rd-srow"><label for="rpgd-carrymode">${escapeHtml(t('set_carrymode').replace(/[:：]\s*$/, ''))}</label><select id="rpgd-carrymode" class="text_pole">${opt('off', settings.carryMode, t('carry_off'))}${opt('char', settings.carryMode, t('carry_char'))}${opt('all', settings.carryMode, t('carry_all'))}</select></div>
+                    ${chk('rpgd-carrydossier', 'set_carrydossier')}${chk('rpgd-carryentries', 'set_carryentries')}${chk('rpgd-carryscenes', 'set_carryscenes')}${note('set_carryscenes_note')}
+                    ${chk('rpgd-ragdossiers', 'set_ragdossiers')}${chk('rpgd-incremental', 'set_incremental')}`)}
+                ${sub(`⏰ ${escapeHtml(t('set_auto_h'))}`, `
+                    ${chk('rpgd-autosum', 'set_autosum')}${chk('rpgd-autoentry', 'set_autoentry')}
+                    ${num('rpgd-autodays', 'set_autodays', 'min="1" max="30"')}${num('rpgd-autoevery', 'set_autoevery', 'min="0" max="200"')}${note('set_autoevery_note')}
+                    ${chk('rpgd-locknew', 'set_locknew')}
+                    <div class="rd-srow"><label for="rpgd-librarymode">${escapeHtml(t('set_librarymode').replace(/[:：]\s*$/, ''))}</label><select id="rpgd-librarymode" class="text_pole">${opt('update', settings.libraryMode, t('lib_update'))}${opt('append', settings.libraryMode, t('lib_append'))}</select></div>`)}
+                ${sub(`🧲 ${escapeHtml(t('set_embed_h'))}`, `
+                    ${chk('rpgd-useembed', 'set_useembed')}${chk('rpgd-persistvec', 'set_persistvec')}
+                    ${field('rpgd-emburl', 'set_url', 'text', t('set_embed_url_ph'))}${field('rpgd-embkey', 'set_key', 'password', t('set_embed_url_ph'))}${field('rpgd-embmodel', 'set_model', 'text')}
+                    <div class="rd-tools"><button id="rpgd-embtest" class="menu_button rd-tool">${escapeHtml(t('embed_test'))}</button></div>${note('set_embed_note')}`)}
+                ${sub(`🎞️ ${escapeHtml(t('set_scene_h'))}`, `
+                    ${chk('rpgd-scenesearch', 'set_scenesearch')}${num('rpgd-scenemax', 'set_scenemax', 'min="0" max="5"')}${num('rpgd-sceneskip', 'set_sceneskip', 'min="0" max="200"')}`)}
             </div>
         </div>
     </div>`;
@@ -2569,6 +3110,30 @@ function bindSettings() {
     const et = document.getElementById('rpgd-embtest'); if (et) et.onclick = testEmbeddings;
     set('rpgd-scenesearch', 'sceneSearch', 'check'); set('rpgd-scenemax', 'sceneMax', 'int'); set('rpgd-sceneskip', 'sceneSkipTail', 'int');
     set('rpgd-useembed', 'useEmbeddings', 'check'); set('rpgd-emburl', 'embedUrl', 'str'); set('rpgd-embkey', 'embedKey', 'str'); set('rpgd-embmodel', 'embedModel', 'str');
+    const ck = (id, key) => { const el = $(id); if (!el) return; el.checked = settings[key] !== false; el.onchange = () => { settings[key] = el.checked; saveSettings(); postSettingChange(); }; };
+    ck('rpgd-whohere', 'whoHere'); ck('rpgd-bondssync', 'bondsSync'); ck('rpgd-mergepeople', 'mergePeople');
+    ck('rpgd-sendbond', 'sendBond'); ck('rpgd-sendevents', 'sendEvents'); ck('rpgd-sendpeople', 'sendPeople'); ck('rpgd-sendgifts', 'sendGifts'); ck('rpgd-sendplaces', 'sendPlaces'); ck('rpgd-sendgloss', 'sendGloss');
+    const mp = $('rpgd-mergepeople'); if (mp) mp.addEventListener('change', () => { tab = 0; bondSel = 0; try { if (document.getElementById('rpg-diary-modal')?.classList.contains('visible')) renderPanel(); } catch (e) { /* closed */ } }); ck('rpgd-anchorscene', 'anchorSceneOnly'); ck('rpgd-trimcarried', 'trimCarried');
+    ck('rpgd-minscore', 'ragMinScore'); ck('rpgd-skipknown', 'skipKnown'); ck('rpgd-scenesplit', 'sceneSplit'); ck('rpgd-ctxheaders', 'ctxHeaders');
+    ck('rpgd-dedupe', 'ragDedupe'); ck('rpgd-outdated', 'outdatedFacts'); ck('rpgd-persistvec', 'persistVectors');
+    // off by default: only a real true turns them on
+    const ck0 = (id, key) => { const el = $(id); if (!el) return; el.checked = settings[key] === true; el.onchange = () => { settings[key] = el.checked; saveSettings(); postSettingChange(); }; };
+    ck0('rpgd-recency', 'recencyWeight'); ck0('rpgd-rerank', 'rerank');
+    // the language switch redraws the settings in the new language, in place and still open
+    const lg = $('rpgd-lang');
+    if (lg) lg.addEventListener('change', () => {
+        const box = document.querySelector('.rpg-diary-settings');
+        if (!box || !box.parentElement) return;
+        const content = box.querySelector('.inline-drawer-content');
+        const open = content && getComputedStyle(content).display !== 'none';
+        box.parentElement.innerHTML = settingsHtml();
+        bindSettings();
+        if (open) {
+            const c2 = document.querySelector('.rpg-diary-settings .inline-drawer-content'); if (c2) c2.style.display = 'block';
+            const ic = document.querySelector('.rpg-diary-settings .inline-drawer-icon'); if (ic) { ic.classList.remove('down', 'fa-circle-chevron-down'); ic.classList.add('up', 'fa-circle-chevron-up'); }
+        }
+        try { ensureButton(); } catch (e) { /* drawn next time */ }
+    });
 }
 function postSettingChange() {
     ensureButton();
@@ -2590,6 +3155,7 @@ function onMessage(id) {
     if (!settings.enabled || !state) return;
     buildInjection();
     scheduleEmbed();
+    if (settings.rerank === true) setTimeout(() => { rerankNow(); }, 1600);   // after the vectors are fresh
     if (!apiKey() || aiBusy) return;
     // Message-count trigger: keeps the memory topped up even without a Scene Card / game calendar.
     const every = Math.max(0, parseInt(settings.autoEvery) || 0);
@@ -2647,6 +3213,8 @@ window.RPG = window.RPG || {};
 window.RPG.diary = {
     available: true,
     isEnabled: () => !!settings.enabled,
+    // what the memory search looks through right now (read-only: kind, date, place, who, length)
+    pieces: () => (state ? memoryChunks().map(c => ({ type: c.type, date: c.date || '', loc: c.loc || c.extra || '', who: c.who || '', len: String(c.text || '').length, head: String(c.text || '').slice(0, 60) })) : []),
     addEntry: (e) => {
         if (!state) return null;
         const st = currentStamp();
