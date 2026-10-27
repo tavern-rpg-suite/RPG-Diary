@@ -112,12 +112,12 @@ const I18N = {
         inj_hint: 'This is established history. Treat these relationships and events as already true; do not reset characters to a colder/earlier state.',
         // settings
         set_title: 'RPG Diary & Memory',
-        set_files_h: 'Saves',
+        set_files_h: 'Saves', set_compacttemp: 'Temperature for 🗜 Compact',
         mem_compact: 'Compact', mem_compact_hint: 'The same memory in fewer words: repetition and wordiness out, every fact kept. You get a draft to read first; the summary itself is not changed.',
         mem_compact_busy: 'Compacting the memory…', mem_compact_ready: 'The compacted draft is ready — read it under the memory.', mem_compact_draft: 'Compacted draft',
         mem_compact_words: '{from} → {to} words', mem_compact_kept: 'Every name and number is still there.', mem_compact_lost: 'Missing from the draft: {list}. Read it before taking it.', mem_compact_read: 'Read the whole draft',
         mem_compact_fewer: '{n} point(s) fewer than before: one was dropped or two were glued together.', mem_compact_broken: 'A line starts mid-sentence, probably cut in half: {list}.',
-        mem_compact_restored: 'The closing line was missing — put back word for word.', mem_compact_small: 'Less than 15% shorter: this memory has little repetition, compacting gains little.',
+        mem_compact_restored: 'The closing line was missing — put back word for word.', mem_compact_typos: 'Mangled words put back as the memory has them: {list}.', mem_compact_small: 'Less than 15% shorter: this memory has little repetition, compacting gains little.',
         tab_people: 'People', people_h1: 'Who is who', live_h: 'Bonds · right now', live_conflict: 'in conflict with you', live_level: 'level from Bonds', live_now: 'mood',
         set_bondssync: 'With RPG Status Bar + Bonds: show its live relationship on the People page and take its level at each summary',
         set_mergepeople: 'Bonds and NPCs as one tab, "People"', set_send_h: 'What goes to the AI', set_send_note: 'Unticked parts stay in the book; they are just not sent.',
@@ -229,12 +229,12 @@ const I18N = {
         inj_now: 'Сейчас', days_ago: 'дн. назад',
         inj_hint: 'Это уже установленная история. Считай эти отношения и события уже истинными; не откатывай персонажей к более холодному/раннему состоянию.',
         set_title: 'RPG Дневник и Память',
-        set_files_h: 'Сохранения',
+        set_files_h: 'Сохранения', set_compacttemp: 'Температура для 🗜 «Утрамбовать»',
         mem_compact: 'Утрамбовать', mem_compact_hint: 'Та же память меньшим числом слов: без повторов и лишних слов, все факты на месте. Сначала получаешь черновик; сама сводка не меняется.',
         mem_compact_busy: 'Утрамбовываю память…', mem_compact_ready: 'Утрамбованный черновик готов — он под памятью.', mem_compact_draft: 'Утрамбованный черновик',
         mem_compact_words: '{from} → {to} слов', mem_compact_kept: 'Все имена и числа на месте.', mem_compact_lost: 'В черновике нет: {list}. Прочитай, прежде чем брать.', mem_compact_read: 'Прочитать черновик целиком',
         mem_compact_fewer: 'Пунктов на {n} меньше, чем было: один выпал или два склеились.', mem_compact_broken: 'Строка начинается с середины фразы — похоже, пункт разрезан: {list}.',
-        mem_compact_restored: 'Последняя строка пропала — возвращена слово в слово.', mem_compact_small: 'Короче меньше чем на 15%: повторов в этой памяти мало, утрамбовка почти ничего не даёт.',
+        mem_compact_restored: 'Последняя строка пропала — возвращена слово в слово.', mem_compact_typos: 'Искажённые слова возвращены как в памяти: {list}.', mem_compact_small: 'Короче меньше чем на 15%: повторов в этой памяти мало, утрамбовка почти ничего не даёт.',
         tab_people: 'Люди', people_h1: 'Кто есть кто', live_h: 'Bonds · сейчас', live_conflict: 'в ссоре с тобой', live_level: 'уровень из Bonds', live_now: 'настроение',
         set_bondssync: 'С RPG Status Bar + Bonds: показывать его живые отношения на странице «Люди» и брать его уровень при каждой сводке',
         set_mergepeople: '«Отношения» и «НПС» одной вкладкой — «Люди»', set_send_h: 'Что уходит ИИ', set_send_note: 'Снятое остаётся в книге — просто не отправляется.',
@@ -306,6 +306,7 @@ const defaultSettings = {
     notesToAI: false,
     anchorSceneOnly: true,
     whoHere: true,
+    compactTemp: 0.5,        // the temperature of 🗜 Compact (copying: lower than the summary's)
     bondsSync: true,         // with RPG Status Bar + Bonds: its live relationship on the People page, and its level taken at each summary
     mergePeople: true,       // "Bonds" and "NPCs" as one tab, "People"
     // what goes to the AI from the book (unticked: kept in the book, not sent)
@@ -630,7 +631,7 @@ function refreshBorrowNote() {
         : `Empty — key and model are taken from "${SRC_LABEL[from] || from}". Fill in both to use your own.`;
 }
 
-async function callAI(systemPrompt, userPrompt, maxTokens) {
+async function callAI(systemPrompt, userPrompt, maxTokens, temperature) {
     if (!apiKey()) throw new Error('no-key');
     const url = (apiUrl() || 'https://openrouter.ai/api/v1').replace(/\/$/, '') + '/chat/completions';
     for (let i = 0; i < 2; i++) {
@@ -641,7 +642,7 @@ async function callAI(systemPrompt, userPrompt, maxTokens) {
                 body: JSON.stringify({
                     model: apiModel(),
                     messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
-                    temperature: typeof settings.temperature === 'number' ? settings.temperature : 0.7,
+                    temperature: typeof temperature === 'number' ? temperature : (typeof settings.temperature === 'number' ? settings.temperature : 0.7),
                     max_tokens: maxTokens || (parseInt(settings.maxTokens) || 16000)
                 })
             });
@@ -2041,6 +2042,7 @@ function memL() {
             ${pi.fewer ? `<div class="rd-warn">⚠ ${escapeHtml(t('mem_compact_fewer', { n: pi.fewer }))}</div>` : ''}
             ${pi.broken && pi.broken.length ? `<div class="rd-warn">⚠ ${escapeHtml(t('mem_compact_broken', { list: pi.broken.map(x => '«' + x + '…»').join(', ') }))}</div>` : ''}
             ${pi.restored ? `<div class="rd-meta">↩ ${escapeHtml(t('mem_compact_restored'))}</div>` : ''}
+            ${pi.typos && pi.typos.length ? `<div class="rd-meta">✎ ${escapeHtml(t('mem_compact_typos', { list: pi.typos.join(', ') }))}</div>` : ''}
             ${pi.small ? `<div class="rd-meta">ℹ ${escapeHtml(t('mem_compact_small'))}</div>` : ''}
             <details class="rd-draft-full"><summary>${escapeHtml(t('mem_compact_read'))}</summary><div class="rd-draft-t" style="white-space:pre-wrap">${escapeHtml(draft)}</div></details>
             <div class="rd-acts">
@@ -2096,7 +2098,48 @@ function memR() {
 /* 🗜 Compact: the same memory in fewer words — on request only, never on its own. The summary is not
    touched: the result is a draft beside it, with how many words it saves, a check that every name and
    number is still there, and the whole text to read. Taking it keeps the old version in Versions (⟲). */
-const COMPACT_SYS = 'You compress a roleplay\'s long-term memory without losing anything. Keep EVERY fact, name, number, rule, debt, item, place and event — only remove repetition and wordiness. Merge lines that say the same thing; shorten long phrasing; keep the same structure (the same sections and bullet lists), the same language and the neutral third person. Do not add anything new, do not soften or judge, do not change the order of the history. Every bullet stays a bullet of its own, with its title — never drop or merge two bullets into one. Keep the very last line word for word. Return ONLY the compacted memory text.';
+const COMPACT_SYS = [
+    "Compress the roleplay's long-term memory without losing information.",
+    'Keep EVERY unique fact, name, number, item, place, event, rule, relationship, motive, debt, and consequence. Preserve who did what, why, and what resulted from it. Keep all meaningful details, including small ones that may matter later.',
+    'Remove repetition and wordiness; rephrase and shorten without changing meaning. Never replace specific details with vague summaries, merge distinct events, omit facts as unimportant, or invent information. Keep intimate and violent details as they are: do not soften, censor or moralize.',
+    'Keep the exact original structure, section order, bullet order, language, and third-person narration. Every bullet must remain separate with its original title. Do not add, remove, or rename sections.',
+    'Copy names, numbers, quoted phrases, and specific terms exactly; never guess, autocorrect, or alter them.',
+    'Before output, compare the result against the source and restore any missing facts or causal links.',
+    'Keep the very last line word for word.',
+    'Return ONLY the compacted memory text.'
+].join('\n');
+/* A word the model mangled while copying ("red-intked", "Briefring", "her .throat") is put back as the
+   source has it. Only a word that is NOT in the source and differs from a source word by one or two
+   letters INSIDE it (same beginning and same ending) — a changed ending ("forced" → "forcing") is
+   grammar and stays as written. */
+function editDist(a, b) {
+    if (Math.abs(a.length - b.length) > 2) return 9;
+    const d = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+    for (let j = 1; j <= b.length; j++) d[0][j] = j;
+    for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++)
+        d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    return d[a.length][b.length];
+}
+function repairTypos(text, source, fixed) {
+    const words = new Set((String(source).match(/[\p{L}][\p{L}'’-]*/gu) || []));
+    const list = [...words].filter(w => w.length >= 5);
+    const src = String(source).replace(/\s+/g, ' ');
+    // and only where the source has that word next to the same neighbour ("red-inked ledger", "The Briefing"):
+    // "peeling potatoes" is a rephrasing, not a typo of "pending"
+    const clean = x => String(x || '').replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '');
+    let out = String(text).replace(/[\p{L}][\p{L}'’-]*/gu, (w, at, all) => {
+        if (w.length < 5 || words.has(w)) return w;
+        const prev = clean((all.slice(0, at).match(/(\S+)\s*$/) || [])[1]);
+        const next = clean((all.slice(at + w.length).match(/^\s*(\S+)/) || [])[1]);
+        const hit = list.find(o => editDist(o, w) <= 2 && o.slice(0, 2) === w.slice(0, 2) && o.slice(-3) === w.slice(-3)
+            && ((prev && src.includes(prev + ' ' + o)) || (next && src.includes(o + ' ' + next))));
+        if (hit) { fixed.push(`${w} → ${hit}`); return hit; }
+        return w;
+    });
+    // a stray dot glued to a word ("her .throat") that the source does not have
+    out = out.replace(/(\s)\.(\p{L}+)/gu, (m, sp, w) => (String(source).includes('.' + w) ? m : (fixed.push(`.${w} → ${w}`), sp + w)));
+    return out;
+}
 function memoryMarkers(text) {
     // names and numbers: the things a compaction must never drop
     const out = new Set();
@@ -2116,10 +2159,13 @@ async function compactMemory() {
     aiBusy = true; renderPanel();
     try {
         toastr.info(t('mem_compact_busy'));
-        const out = String(await callAI(COMPACT_SYS, mem, 3500) || '').trim();
+        // copying, not writing: its own temperature (settings, 0.5 by default), so words are not mangled on the way
+        const ct = Number.isFinite(+settings.compactTemp) ? Math.max(0, Math.min(2, +settings.compactTemp)) : 0.5;
+        const out = String(await callAI(COMPACT_SYS, mem, 3500, ct) || '').trim();
         if (!ownsChat(myChat)) { aiBusy = false; return; }
         if (!out) { toastr.error(t('t_sum_err')); aiBusy = false; renderPanel(); return; }
-        let draft = out;
+        const fixedTypos = [];
+        let draft = repairTypos(out, mem, fixedTypos);
         // the closing line ("the settling-in phase is over…") is what keeps a new chat from going cold: never lost
         const lastOld = mem.split('\n').map(x => x.trim()).filter(Boolean).pop() || '';
         let restored = false;
@@ -2133,7 +2179,7 @@ async function compactMemory() {
         const broken = draft.split('\n').filter(l => /^\s*(and|or|but|then|и|а|но)\b/i.test(l) || /^\s+\p{Ll}/u.test(l)).map(l => l.trim().slice(0, 50));
         const from = mem.split(/\s+/).length, to = draft.split(/\s+/).length;
         state.pendingMemory = draft;
-        state.pendingInfo = { kind: 'compact', from, to, lost, fewer, broken, restored, small: to > from * 0.85, ts: Date.now() };
+        state.pendingInfo = { kind: 'compact', from, to, lost, fewer, broken, restored, small: to > from * 0.85, typos: fixedTypos.slice(0, 12), ts: Date.now() };
         saveState();
         toastr.success(t('mem_compact_ready'));
     } catch (e) { toastr.error(t('t_sum_err')); }
@@ -3120,7 +3166,7 @@ function settingsHtml() {
                 ${sub(`🔌 ${escapeHtml(t('set_api'))}`, `
                     ${field('rpgd-url', 'set_url', 'text')}${field('rpgd-key', 'set_key', 'password')}${field('rpgd-model', 'set_model', 'text')}
                     <div class="rd-srow" id="rpgd-borrow" style="display:none"><small style="opacity:.75"></small></div>
-                    ${num('rpgd-temp', 'set_temp', 'min="0" max="2" step="0.1"')}${num('rpgd-maxtok', 'set_maxtok', 'min="1000" max="64000" step="1000"')}
+                    ${num('rpgd-temp', 'set_temp', 'min="0" max="2" step="0.1"')}${num('rpgd-compacttemp', 'set_compacttemp', 'min="0" max="2" step="0.1"')}${num('rpgd-maxtok', 'set_maxtok', 'min="1000" max="64000" step="1000"')}
                     ${note('set_maxtok_note')}`)}
                 ${sub(`🧠 ${escapeHtml(t('set_inject_h'))}`, `
                     ${chk('rpgd-injmemory', 'set_injmemory')}${chk('rpgd-injsummary', 'set_injsummary')}${note('set_injmemory_note')}
@@ -3169,7 +3215,7 @@ function bindSettings() {
     const imAll = document.getElementById('rpgd-importall'); if (imAll) imAll.onclick = importAll;
     set('rpgd-lang', 'language', 'str'); set('rpgd-outlang', 'outputLang', 'str');
     set('rpgd-url', 'baseUrl', 'str'); set('rpgd-key', 'apiKey', 'str'); set('rpgd-model', 'model', 'str');
-    refreshBorrowNote(); set('rpgd-temp', 'temperature', 'num'); set('rpgd-maxtok', 'maxTokens', 'int');
+    refreshBorrowNote(); set('rpgd-temp', 'temperature', 'num'); set('rpgd-compacttemp', 'compactTemp', 'num'); set('rpgd-maxtok', 'maxTokens', 'int');
     set('rpgd-injmemory', 'injectMemory', 'check'); set('rpgd-injsummary', 'injectSummary', 'check');
     set('rpgd-injmode', 'injectMode', 'str');
     set('rpgd-injnew', 'injectOnNew', 'check'); set('rpgd-injdiary', 'injectDiary', 'check'); set('rpgd-injfull', 'injectWhenFull', 'check');
