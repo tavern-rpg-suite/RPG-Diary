@@ -1975,10 +1975,10 @@ function matchQ(...fields) {
     return fields.some(f => String(f || '').toLowerCase().includes(q));
 }
 function pinBtn(type, id, pinned) {
-    return `<button class="rd-btn ${pinned ? 'gold' : ''} rpg-d-pin" data-type="${type}" data-id="${id}" title="${escapeHtml(t('pin_hint'))}">${pinned ? '📌 ' + t('pinned') : '📌 ' + t('pin')}</button>`;
+    return `<button class="rd-btn ${pinned ? 'gold' : ''} rpg-d-pin" data-type="${type}" data-id="${escapeHtml(id)}" title="${escapeHtml(t('pin_hint'))}">${pinned ? '📌 ' + t('pinned') : '📌 ' + t('pin')}</button>`;
 }
 function oldBtn(type, it) {
-    return `<button class="rd-btn ${it.old ? 'gold' : ''} rpg-d-old" data-type="${type}" data-id="${it.id}" title="${escapeHtml(t('old_hint'))}">${it.old ? '↺ ' + t('old_unmark') : '⌛ ' + t('old_mark')}</button>`;
+    return `<button class="rd-btn ${it.old ? 'gold' : ''} rpg-d-old" data-type="${type}" data-id="${escapeHtml(it.id)}" title="${escapeHtml(t('old_hint'))}">${it.old ? '↺ ' + t('old_unmark') : '⌛ ' + t('old_mark')}</button>`;
 }
 function oldNote(it) {
     return it && it.old ? `<div class="rd-oldnote">⌛ <b>${escapeHtml(t('old_note'))}</b>${it.old.why ? ': ' + escapeHtml(it.old.why) : ''}</div>` : '';
@@ -2089,7 +2089,7 @@ function memR() {
                 <div class="rd-sub">${escapeHtml(new Date(v.ts).toLocaleString())} · ${v.words || (v.text || '').split(/\s+/).length} ${escapeHtml(t('mem_words_short'))}</div>
                 <div style="font-size:12px;color:var(--ink-soft);margin-top:2px">${escapeHtml((v.text || '').slice(0, 70))}…</div>
             </div>
-            <button class="rd-mini rpg-d-verrestore" data-id="${v.id}" title="${escapeHtml(t('mem_restore'))}">⟲</button>
+            <button class="rd-mini rpg-d-verrestore" data-id="${escapeHtml(v.id)}" title="${escapeHtml(t('mem_restore'))}">⟲</button>
         </div>`).join('')}</div>` : '';
     if (!lib.length) return head + `<div class="rd-empty">${t('no_library')}</div>` + versBlock + acts;
     return head + `<div class="rd-listcol${versBlock ? ' rd-libcol' : ''}">${lib.map(sm => `<div class="rd-lrow" style="cursor:default;align-items:flex-start">
@@ -2098,8 +2098,8 @@ function memR() {
             <div class="rd-sub">${libMeta(sm)}</div>
             <div style="font-size:12px;color:var(--ink-soft);margin-top:3px">${escapeHtml((sm.text || '').slice(0, 110))}…</div>
         </div>
-        <button class="rd-mini rpg-d-libren" data-id="${sm.id}" title="${escapeHtml(t('lib_rename'))}">✎</button>
-        <button class="rd-mini rpg-d-libdel" data-id="${sm.id}" title="${escapeHtml(t('lib_del'))}">✕</button>
+        <button class="rd-mini rpg-d-libren" data-id="${escapeHtml(sm.id)}" title="${escapeHtml(t('lib_rename'))}">✎</button>
+        <button class="rd-mini rpg-d-libdel" data-id="${escapeHtml(sm.id)}" title="${escapeHtml(t('lib_del'))}">✕</button>
     </div>`).join('')}</div>` + versBlock + acts;
 }
 /* 🗜 Compact: the same memory in fewer words — on request only, never on its own. The summary is not
@@ -2278,8 +2278,8 @@ function bondR() {
             ${b.twin.met ? `<span class="rd-eyebrow">${t('how_met')}</span><br>${escapeHtml(b.twin.met)}<br><br>` : ''}
             ${b.twin.note ? `<span class="rd-eyebrow">${t('note')}</span><br><i>${escapeHtml(b.twin.note)}</i>` : ''}</div>` : ''}
         <div class="rd-acts">${b.kind === 'npc'
-            ? `<button class="rd-btn rpg-d-edit" data-type="npc" data-id="${b.id}">${t('act_edit')}</button><button class="rd-btn rpg-d-del2" data-type="npc" data-id="${b.id}">${t('act_del')}</button>`
-            : `<button class="rd-btn rpg-d-edit" data-type="bond">${t('act_edit')}</button>${b.twin ? `<button class="rd-btn rpg-d-edit" data-type="npc" data-id="${b.twin.id}">✎ ${escapeHtml(t('dossier'))}</button><button class="rd-btn rpg-d-del2" data-type="npc" data-id="${b.twin.id}" title="${escapeHtml(t('del_twin_hint'))}">✕ ${escapeHtml(t('del_twin'))}</button>` : ''}`}</div>
+            ? `<button class="rd-btn rpg-d-edit" data-type="npc" data-id="${escapeHtml(b.id)}">${t('act_edit')}</button><button class="rd-btn rpg-d-del2" data-type="npc" data-id="${escapeHtml(b.id)}">${t('act_del')}</button>`
+            : `<button class="rd-btn rpg-d-edit" data-type="bond">${t('act_edit')}</button>${b.twin ? `<button class="rd-btn rpg-d-edit" data-type="npc" data-id="${escapeHtml(b.twin.id)}">✎ ${escapeHtml(t('dossier'))}</button><button class="rd-btn rpg-d-del2" data-type="npc" data-id="${escapeHtml(b.twin.id)}" title="${escapeHtml(t('del_twin_hint'))}">✕ ${escapeHtml(t('del_twin'))}</button>` : ''}`}</div>
     </div>`;
 }
 function feedL() {
@@ -2318,8 +2318,8 @@ function fullR(e) {
         <div class="rd-entry" style="margin:8px 0;flex:none;overflow:visible"><p>${txt}</p></div>
         ${trustRow}
         ${(e.tags && e.tags.length) ? `<div class="rd-chips">${e.tags.map(x => `<span class="rd-chip">${escapeHtml(x)}</span>`).join('')}</div>` : ''}
-        <div class="rd-acts">${pinBtn('entry', e.id, e.pin)}<button class="rd-btn rpg-d-edit" data-type="entry" data-id="${e.id}">${t('act_edit')}</button>
-        <button class="rd-btn rpg-d-del" data-type="entry" data-id="${e.id}">${t('act_del')}</button></div>
+        <div class="rd-acts">${pinBtn('entry', e.id, e.pin)}<button class="rd-btn rpg-d-edit" data-type="entry" data-id="${escapeHtml(e.id)}">${t('act_edit')}</button>
+        <button class="rd-btn rpg-d-del" data-type="entry" data-id="${escapeHtml(e.id)}">${t('act_del')}</button></div>
         <div class="rd-genstamp" style="margin-top:8px">${I(G.spark)}${stampTxt}</div>
     </div>`;
 }
@@ -2344,8 +2344,8 @@ function evtR() {
         <div class="rd-rule"></div>
         <div class="rd-entry" style="flex:none;overflow:visible"><p>${escapeHtml(e.what || '')}</p></div>
         ${oldNote(e)}
-        <div class="rd-acts">${pinBtn('evt', e.id, e.pin)}${oldBtn('evt', e)}<button class="rd-btn rpg-d-edit" data-type="evt" data-id="${e.id}">${t('act_edit')}</button>
-        <button class="rd-btn rpg-d-del" data-type="evt" data-id="${e.id}">${t('act_del')}</button></div>`;
+        <div class="rd-acts">${pinBtn('evt', e.id, e.pin)}${oldBtn('evt', e)}<button class="rd-btn rpg-d-edit" data-type="evt" data-id="${escapeHtml(e.id)}">${t('act_edit')}</button>
+        <button class="rd-btn rpg-d-del" data-type="evt" data-id="${escapeHtml(e.id)}">${t('act_del')}</button></div>`;
 }
 
 /* ---- NPC ---- */
@@ -2372,8 +2372,8 @@ function npcR() {
             ${n.note ? `<span class="rd-eyebrow">${t('note')}</span><br><i>${escapeHtml(n.note)}</i>` : ''}
         </div>
         ${oldNote(n)}
-        <div class="rd-acts">${pinBtn('npc', n.id, n.pin)}${oldBtn('npc', n)}<button class="rd-btn rpg-d-edit" data-type="npc" data-id="${n.id}">${t('act_edit')}</button>
-        <button class="rd-btn rpg-d-del" data-type="npc" data-id="${n.id}">${t('act_del')}</button></div>`;
+        <div class="rd-acts">${pinBtn('npc', n.id, n.pin)}${oldBtn('npc', n)}<button class="rd-btn rpg-d-edit" data-type="npc" data-id="${escapeHtml(n.id)}">${t('act_edit')}</button>
+        <button class="rd-btn rpg-d-del" data-type="npc" data-id="${escapeHtml(n.id)}">${t('act_del')}</button></div>`;
 }
 
 /* ---------- LOCATIONS ---------- */
@@ -2394,8 +2394,8 @@ function locR() {
         <div class="rd-band">${escapeHtml(l.name)}<span class="rd-mk"></span></div>
         <p style="font-size:14px;line-height:1.6;margin-top:10px">${escapeHtml(l.desc || '')}</p>
         ${oldNote(l)}
-        <div class="rd-acts">${pinBtn('loc', l.id, l.pin)}${oldBtn('loc', l)}<button class="rd-btn rpg-d-edit" data-type="loc" data-id="${l.id}">${t('act_edit')}</button>
-        <button class="rd-btn rpg-d-del" data-type="loc" data-id="${l.id}">${t('act_del')}</button></div>`;
+        <div class="rd-acts">${pinBtn('loc', l.id, l.pin)}${oldBtn('loc', l)}<button class="rd-btn rpg-d-edit" data-type="loc" data-id="${escapeHtml(l.id)}">${t('act_edit')}</button>
+        <button class="rd-btn rpg-d-del" data-type="loc" data-id="${escapeHtml(l.id)}">${t('act_del')}</button></div>`;
 }
 
 /* ---------- GIFTS ---------- */
@@ -2413,8 +2413,8 @@ function giftsR() {
         <div class="rd-band">${t('circumstances')}<span class="rd-mk"></span></div>
         <p style="font-size:13.5px;line-height:1.6;margin-top:10px"><b>${escapeHtml(g.who || '')}</b><br>${escapeHtml(g.when || '')}<br><br><i>${escapeHtml(g.why || '')}</i></p>
         ${oldNote(g)}
-        <div class="rd-acts">${pinBtn('gift', g.id, g.pin)}${oldBtn('gift', g)}<button class="rd-btn rpg-d-edit" data-type="gift" data-id="${g.id}">${t('act_edit')}</button>
-        <button class="rd-btn rpg-d-del" data-type="gift" data-id="${g.id}">${t('act_del')}</button></div>
+        <div class="rd-acts">${pinBtn('gift', g.id, g.pin)}${oldBtn('gift', g)}<button class="rd-btn rpg-d-edit" data-type="gift" data-id="${escapeHtml(g.id)}">${t('act_edit')}</button>
+        <button class="rd-btn rpg-d-del" data-type="gift" data-id="${escapeHtml(g.id)}">${t('act_del')}</button></div>
         <div class="rd-genstamp" style="margin-top:12px">${I(G.spark)}${t('gift_link')}</div>`;
 }
 
@@ -2426,9 +2426,9 @@ function glossL() {
         ? `<div class="rd-listcol">${state.glossary.map(g => `<div class="rd-lrow${g.old ? ' rd-old' : ''}" style="cursor:default;align-items:flex-start">
             <div style="flex:1"><div class="rd-nm" style="color:var(--oxblood)">${escapeHtml(g.term)}</div>
             <div style="font-size:13px;line-height:1.5;margin-top:3px">${escapeHtml(g.def || '')}</div></div>
-            <button class="rd-mini rpg-d-old" data-type="gloss" data-id="${g.id}" title="${escapeHtml(g.old ? t('old_unmark') : t('old_mark'))}">${g.old ? '↺' : '⌛'}</button>
-            <button class="rd-mini rpg-d-edit" data-type="gloss" data-id="${g.id}">✎</button>
-            <button class="rd-mini rpg-d-del" data-type="gloss" data-id="${g.id}">✕</button></div>`).join('')}</div>`
+            <button class="rd-mini rpg-d-old" data-type="gloss" data-id="${escapeHtml(g.id)}" title="${escapeHtml(g.old ? t('old_unmark') : t('old_mark'))}">${g.old ? '↺' : '⌛'}</button>
+            <button class="rd-mini rpg-d-edit" data-type="gloss" data-id="${escapeHtml(g.id)}">✎</button>
+            <button class="rd-mini rpg-d-del" data-type="gloss" data-id="${escapeHtml(g.id)}">✕</button></div>`).join('')}</div>`
         : `<div class="rd-empty">${t('no_gloss')}</div>`;
     return head + body + acts;
 }
@@ -2452,8 +2452,8 @@ function libMeta(s) {
 }
 function libRow(s, kind, checked) {
     const input = kind === 'radio'
-        ? `<input type="radio" name="rd-cont" class="rpg-d-cchk" data-id="${s.id}">`
-        : `<input type="checkbox" class="rpg-d-mchk" data-id="${s.id}" ${checked ? 'checked' : ''}>`;
+        ? `<input type="radio" name="rd-cont" class="rpg-d-cchk" data-id="${escapeHtml(s.id)}">`
+        : `<input type="checkbox" class="rpg-d-mchk" data-id="${escapeHtml(s.id)}" ${checked ? 'checked' : ''}>`;
     return `<label class="rd-merge-row">${input}
         <span class="rd-mbody">
             <span class="rd-mtitle">${escapeHtml(libTitle(s))}</span>
@@ -2461,8 +2461,8 @@ function libRow(s, kind, checked) {
             <span class="rd-mprev">${escapeHtml((s.text || '').slice(0, 120))}…</span>
         </span>
         <span class="rd-macts">
-            <button type="button" class="rd-mini rpg-d-libren" data-id="${s.id}" title="${escapeHtml(t('lib_rename'))}">✎</button>
-            <button type="button" class="rd-mini rpg-d-libdel" data-id="${s.id}" title="${escapeHtml(t('lib_del'))}">✕</button>
+            <button type="button" class="rd-mini rpg-d-libren" data-id="${escapeHtml(s.id)}" title="${escapeHtml(t('lib_rename'))}">✎</button>
+            <button type="button" class="rd-mini rpg-d-libdel" data-id="${escapeHtml(s.id)}" title="${escapeHtml(t('lib_del'))}">✕</button>
         </span></label>`;
 }
 function renameLib(id) {
@@ -2702,8 +2702,8 @@ function peopleR() {
             ${n.note ? `<span class="rd-eyebrow">${t('note')}</span><br><i>${escapeHtml(n.note)}</i>` : ''}</div>` : ''}
         ${b.kind === 'npc' ? oldNote(n) : ''}
         <div class="rd-acts">${b.kind === 'main'
-            ? `<button class="rd-btn rpg-d-edit" data-type="bond">${t('act_edit')}</button>${b.twin ? `<button class="rd-btn rpg-d-edit" data-type="npc" data-id="${b.twin.id}">✎ ${escapeHtml(t('dossier'))}</button><button class="rd-btn rpg-d-del2" data-type="npc" data-id="${b.twin.id}" title="${escapeHtml(t('del_twin_hint'))}">✕ ${escapeHtml(t('del_twin'))}</button>` : ''}`
-            : `${pinBtn('npc', n.id, n.pin)}${oldBtn('npc', n)}<button class="rd-btn rpg-d-edit" data-type="npc" data-id="${n.id}">${t('act_edit')}</button><button class="rd-btn rpg-d-del2" data-type="npc" data-id="${n.id}">${t('act_del')}</button>`}</div>
+            ? `<button class="rd-btn rpg-d-edit" data-type="bond">${t('act_edit')}</button>${b.twin ? `<button class="rd-btn rpg-d-edit" data-type="npc" data-id="${escapeHtml(b.twin.id)}">✎ ${escapeHtml(t('dossier'))}</button><button class="rd-btn rpg-d-del2" data-type="npc" data-id="${escapeHtml(b.twin.id)}" title="${escapeHtml(t('del_twin_hint'))}">✕ ${escapeHtml(t('del_twin'))}</button>` : ''}`
+            : `${pinBtn('npc', n.id, n.pin)}${oldBtn('npc', n)}<button class="rd-btn rpg-d-edit" data-type="npc" data-id="${escapeHtml(n.id)}">${t('act_edit')}</button><button class="rd-btn rpg-d-del2" data-type="npc" data-id="${escapeHtml(n.id)}">${t('act_del')}</button>`}</div>
     </div>`;
 }
 
@@ -3098,6 +3098,7 @@ function importAll() {
             if (!obj || !obj.chatStates || typeof obj.chatStates !== 'object') { toastr.error(t('t_import_bad')); return; }
             const n = Object.keys(obj.chatStates).length;
             if (!confirm(t('t_importall_confirm', { n }))) return;
+            for (const k of ['__proto__', 'constructor', 'prototype']) delete obj.chatStates[k];   // a crafted file must not reach the object's prototype
             settings.chatStates = Object.assign({}, settings.chatStates, obj.chatStates);   // merge, never wipe
             if (Array.isArray(obj.library)) {
                 if (!Array.isArray(settings.summaryLibrary)) settings.summaryLibrary = [];
