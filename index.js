@@ -680,7 +680,7 @@ function parseJSON(raw) {
 const vecCache = new Map();   // key `${chunkId}:${hash}` -> Float array. In-memory only (not persisted).
 let lastQueryVec = null, embedBusy = false, embedTimer = null, embedWorking = false;
 // What a piece is searched by: its text, and — with "date, place, who" on — a short header in front, so
-// "the library with Rufus" finds the scene that happened there even when the lines never say "library".
+// "the library with Mark" finds the scene that happened there even when the lines never say "library".
 function chunkHeader(c) {
     const bits = [c.date, c.loc, c.who].map(x => String(x || '').trim()).filter(Boolean);
     return bits.length ? `[${bits.join(' · ')}]` : '';
@@ -1463,14 +1463,14 @@ function recentText() {
     return (buildTranscript().slice(-6).join(' ') + ' ' + (sc && sc.loc ? sc.loc : '')).toLowerCase();
 }
 // Entity trigger: if someone/something is being talked about RIGHT NOW, its dossier must be present —
-// this is what makes a character actually remember Mari the moment Mari is mentioned.
+// this is what makes a character actually remember Clara the moment Clara is mentioned.
 function triggeredChunks(chunks, hay) {
     const hits = [];
     for (const c of chunks) {
         if (!c.name || c.type === 'diary') continue;
         const nm = String(c.name).toLowerCase().trim();
         if (nm.length < 3) continue;
-        // match the first word too, so "Mari" catches "Mari Delacroix"
+        // match the first word too, so "Clara" catches "Clara Moreau"
         const first = nm.split(/\s+/)[0];
         if (hay.includes(nm) || (first.length >= 4 && hay.includes(first))) hits.push(c);
     }
@@ -1921,7 +1921,7 @@ function buildInjection() {
     // Anchors were unbounded: with 100+ NPCs every one at trust>=50 added a line to EVERY message.
     // Keep the main bond plus the strongest 10 NPC bonds — the ones most worth protecting from regression.
     // And only of those in the scene: the ones at home are not in this reply. The main character's own
-    // NPC record ("William (Lord Moriarty)") is the main bond again, so it is left out.
+    // NPC record ("Alex (Lord Ashford)") is the main bond again, so it is left out.
     // only once the chat itself shows who is around: at the start of a new chat everyone's level goes,
     // so nobody comes back colder than they were
     const botReplies = (getContext().chat || []).filter(m => m && !m.is_user && !m.is_system).length;
@@ -2182,7 +2182,7 @@ async function compactMemory() {
         // bullets: fewer than before means one was dropped or two were glued together
         const bullets = x => x.split('\n').filter(l => /^\s*[-•*]\s/.test(l)).length;
         const fewer = Math.max(0, bullets(mem) - bullets(draft));
-        // a line that starts in the middle of a sentence ("and Jenny had…") is a bullet cut in half
+        // a line that starts in the middle of a sentence ("and Kate had…") is a bullet cut in half
         const broken = draft.split('\n').filter(l => /^\s*(and|or|but|then|и|а|но)\b/i.test(l) || /^\s+\p{Ll}/u.test(l)).map(l => l.trim().slice(0, 50));
         const from = mem.split(/\s+/).length, to = draft.split(/\s+/).length;
         state.pendingMemory = draft;
@@ -2218,8 +2218,8 @@ function restoreVersion(id) {
     updateCarry(); saveState(); renderPanel(); buildInjection();
     toastr.success(t('mem_restored'));
 }
-/* The diary's own character sometimes also gets a record among the people ("William (Lord Moriarty)"
-   next to "William ★"). It is the same person: in Bonds he is shown once, as ★, with what that record
+/* The diary's own character sometimes also gets a record among the people ("Alex (Lord Ashford)"
+   next to "Alex ★"). It is the same person: in Bonds he is shown once, as ★, with what that record
    knows (role, looks, how they met, notes) on his page. The record itself stays in the book. */
 // the diary's own character as one card: what was written on the bond, else what the twin record knows
 function mainCard() {
@@ -3323,7 +3323,7 @@ jQuery(() => {
     });
     eventSource.on(event_types.MESSAGE_RECEIVED, (id) => { if (isExternal()) return; onMessage(id); });
     // The user's just-sent message must be part of the retrieval query for THIS generation —
-    // without this hook, "do you remember Mari?" only pulled Mari's dossier one turn later.
+    // without this hook, "do you remember Clara?" only pulled Clara's dossier one turn later.
     eventSource.on(event_types.MESSAGE_SENT, () => {
         if (!settings.enabled || !state || isExternal()) return;
         buildInjection();                                  // BM25 + entity triggers see the fresh message
