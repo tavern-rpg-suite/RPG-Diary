@@ -145,6 +145,7 @@ const I18N = {
         set_injdepth: 'Injection depth:', set_injentries: 'Diary entries to inject:', set_injbudget: 'Max characters of diary injected:',
         set_notes_ai: 'Let the AI see my personal Notes too',
         set_auto_h: 'Automation', set_autoentry: 'Auto-write a diary entry every N game-days', set_autodays: 'Game-days between entries:',
+        set_bookscale: 'Book size when opened from the Suite Menu, %', m_to_r: 'Turn the page ›', m_to_l: '‹ Back',
         set_output_lang: 'AI writes in:', lang_follow: 'Same as UI', lang_en: 'English', lang_ru: 'Russian',
         set_embed_h: 'Vector RAG (optional — needs an embeddings endpoint)', set_useembed: 'Use vector embeddings for retrieval (falls back to keyword RAG)',
         set_embed_url_ph: 'blank = use the API URL above', set_embed_note: 'OpenRouter supports embeddings — leave URL/key blank to reuse the API above, and prefix the model with its provider (e.g. openai/text-embedding-3-small).',
@@ -262,6 +263,7 @@ const I18N = {
         set_injdepth: 'Глубина инъекции:', set_injentries: 'Сколько записей вставлять:', set_injbudget: 'Макс. символов дневника в инъекции:',
         set_notes_ai: 'Показывать ИИ и мои личные Заметки',
         set_auto_h: 'Автоматизация', set_autoentry: 'Авто-запись в дневник каждые N игровых дней', set_autodays: 'Игровых дней между записями:',
+        set_bookscale: 'Размер книги, открытой из меню, %', m_to_r: 'Перевернуть ›', m_to_l: '‹ Назад',
         set_output_lang: 'ИИ пишет на:', lang_follow: 'Как интерфейс', lang_en: 'Английском', lang_ru: 'Русском',
         set_embed_h: 'Векторный RAG (опционально — нужен эмбеддинг-эндпоинт)', set_useembed: 'Использовать векторные эмбеддинги для поиска (иначе — поиск по словам)',
         set_embed_url_ph: 'пусто = взять URL API выше', set_embed_note: 'OpenRouter поддерживает эмбеддинги — оставь URL/ключ пустыми, чтобы взять API выше, и указывай модель с префиксом провайдера (например openai/text-embedding-3-small).',
@@ -309,6 +311,7 @@ const defaultSettings = {
     compactTemp: 0.5,        // the temperature of 🗜 Compact (copying: lower than the summary's)
     bondsSync: true,         // with RPG Status Bar + Bonds: its live relationship on the People page, and its level taken at each summary
     mergePeople: true,       // "Bonds" and "NPCs" as one tab, "People"
+    bookScale: 125,          // % — how large the open book may grow on a big screen (it always fits the screen)
     // what goes to the AI from the book (unticked: kept in the book, not sent)
     sendBond: true, sendEvents: true, sendPeople: true, sendGifts: true, sendPlaces: true, sendGloss: true,           // full cards of the people in the scene (or just mentioned), straight from the book
     // finding memories (all done by code unless marked)
@@ -2731,6 +2734,7 @@ function renderPanel() {
     });
     wire();
     renderNav();
+    if (editing && isOnePage()) setSide('R');      // a form opens on the right page: on a phone, turn to it
 }
 function renderNav() {
     const nav = document.getElementById('rd-nav');
@@ -2743,14 +2747,14 @@ function renderNav() {
 }
 function wire() {
     const root = document.getElementById('rpg-diary-root');
-    root.querySelectorAll('.rd-tab').forEach(b => b.onclick = () => { const n = +b.dataset.t; if (tab === n && !editing) return; tab = n; editing = null; renderPanel(); });
-    root.querySelectorAll('.rd-frow[data-e]').forEach(el => el.onclick = () => turnTo(+el.dataset.e));
+    root.querySelectorAll('.rd-tab').forEach(b => b.onclick = () => { const n = +b.dataset.t; if (tab === n && !editing) { setSide('L'); return; } tab = n; editing = null; mobileSide = 'L'; renderPanel(); setSide('L'); });
+    root.querySelectorAll('.rd-frow[data-e]').forEach(el => el.onclick = () => { turnTo(+el.dataset.e); setSide('R'); });
     root.querySelectorAll('.rd-lrow[data-i]').forEach(el => el.onclick = () => {
         const i = +el.dataset.i, id = TAB_IDS[tab];
         if (id === 'bond') bondSel = i; else if (id === 'evt') evtSel = i; else if (id === 'npc') npcSel = i; else if (id === 'gift') giftSel = i;
-        renderPanel();
+        renderPanel(); setSide('R');
     });
-    root.querySelectorAll('.rd-gcell[data-i]').forEach(el => el.onclick = () => { locSel = +el.dataset.i; renderPanel(); });
+    root.querySelectorAll('.rd-gcell[data-i]').forEach(el => el.onclick = () => { locSel = +el.dataset.i; renderPanel(); setSide('R'); });
     const sum = root.querySelector('.rpg-d-sum'); if (sum) sum.onclick = () => summarizeChat(false);
     const rsum = root.querySelector('.rpg-d-resum'); if (rsum) rsum.onclick = () => { if (confirm(t('resum_confirm'))) summarizeChat(true); };
     const chk = root.querySelector('.rpg-d-check'); if (chk) chk.onclick = checkContradictions;
@@ -2961,7 +2965,7 @@ function ensureButton() {
         document.body.appendChild(btn);
     }
     btn.title = t('btn_open');
-    btn.onclick = toggleModal;                       // click again to close
+    btn.onclick = () => { bigFromMenu = false; toggleModal(); };   // click again to close
     // Only inside a chat: on SillyTavern's home screen (no chat open) there is nothing to keep a diary for.
     const inChat = !!chatKey();
     btn.style.display = (settings.enabled && inChat) ? 'flex' : 'none';
@@ -3038,25 +3042,85 @@ function makeModalDraggable(win, handle) {
         };
     };
 }
+/* The book fits the screen. On a big one it may grow (the size in the settings); on a phone it opens
+   ONE page at a time at nearly full size — two pages side by side were scaled down to half and could
+   not be read. The page turns over with the flip at its corner, and choosing a record, a person or a
+   place turns to the page that shows it. */
+let mobileSide = 'L';
+let bigFromMenu = false;   // opened from the Suite Menu: the larger book, until it is closed
+function isOnePage() { return window.innerWidth < 640; }
 function fitBook() {
     const book = document.getElementById('rd-book'); if (!book) return;
-    const avail = Math.min(window.innerWidth - 40, 780);
-    const s = Math.min(1, avail / 742);
+    const one = isOnePage();
+    book.classList.toggle('rd-one', one);
+    book.dataset.side = mobileSide;
+    const modal = document.getElementById('rpg-diary-modal');
+    if (modal) modal.classList.toggle('rd-onepage', one);
+    const natW = one ? 404 : 742;
+    let s;
+    if (one) {
+        // the width decides the size; the page then grows down to use the phone's height
+        s = Math.max(0.4, Math.min(1.15, (window.innerWidth - 12) / natW));
+        book.style.removeProperty('--rd-ph');
+        const page = book.querySelector('.rd-page');
+        const extra = page && page.offsetHeight ? Math.max(0, book.offsetHeight - page.offsetHeight) : 22;   // hidden: the usual frame
+        const ph = Math.max(466, Math.min(1000, Math.floor((window.innerHeight - 64) / s - extra)));
+        book.style.setProperty('--rd-ph', ph + 'px');
+    } else if (bigFromMenu) {
+        // opened from the Suite Menu: larger, as far as the screen allows (the size in the settings)
+        book.style.removeProperty('--rd-ph');
+        const cap = Math.max(1, Math.min(1.6, (Number(settings.bookScale) || 125) / 100));
+        s = Math.max(0.4, Math.min(cap, (window.innerWidth - 40) / 760, (window.innerHeight - 80) / Math.max(480, book.offsetHeight || 520)));
+    } else {
+        // as it always was
+        book.style.removeProperty('--rd-ph');
+        s = Math.min(1, Math.min(window.innerWidth - 40, 780) / 742);
+    }
+    const natH = Math.max(480, book.offsetHeight || 520);
     book.style.transform = `scale(${s})`;
+    // the scaled book takes the room it shows (a larger book only; the usual one stays exactly as it was)
+    const fit = book.parentElement; if (fit) fit.style.height = (one || bigFromMenu) ? Math.ceil(natH * s) + 'px' : '';
+    syncMobileFlip();
+}
+function setSide(side) {
+    mobileSide = side === 'R' ? 'R' : 'L';
+    const book = document.getElementById('rd-book'); if (!book) return;
+    if (book.dataset.side === mobileSide) return;
+    book.dataset.side = mobileSide;
+    if (isOnePage()) { book.classList.remove('rd-turning'); void book.offsetWidth; book.classList.add('rd-turning'); }
+    syncMobileFlip();
+}
+function syncMobileFlip() {
+    const b = document.getElementById('rd-mflip'); if (!b) return;
+    const toR = mobileSide === 'L';
+    b.textContent = toR ? t('m_to_r') : t('m_to_l');
+    b.setAttribute('aria-label', b.textContent);
+    b.dataset.to = toR ? 'R' : 'L';
 }
 function openModal() {
     loadState(); ensureModal();
+    if (!document.getElementById('rd-mflip')) {
+        const spread = document.querySelector('#rd-book .rd-cover');
+        if (spread) {
+            const fb = document.createElement('button');
+            fb.type = 'button'; fb.id = 'rd-mflip'; fb.className = 'rd-mflip';
+            fb.onclick = (e) => { e.stopPropagation(); setSide(fb.dataset.to === 'R' ? 'R' : 'L'); };
+            spread.appendChild(fb);
+        }
+    }
     const bk = document.getElementById('rd-book');
     if (bk) { if (bookOpen) { bk.classList.remove('closed'); bk.classList.add('open'); } else { bk.classList.add('closed'); bk.classList.remove('open'); } }
     renderPanel(); fitBook();
     const m = document.getElementById('rpg-diary-modal');
     m.classList.add('visible');
+    fitBook();                                     // measured again now that it is on screen
     const r = m.getBoundingClientRect();
     if (r.width && (r.right < 60 || r.left > window.innerWidth - 60 || r.bottom < 40 || r.top > window.innerHeight - 40)) { m.style.left = ''; m.style.top = ''; m.style.transform = ''; }
     scheduleEmbed();
 }
 function closeModal() {
     const m = document.getElementById('rpg-diary-modal'); if (m) m.classList.remove('visible');
+    bigFromMenu = false;
     editing = null;
     if (externalKey) {            // back to this chat's own diary
         externalKey = null; externalLabel = '';
@@ -3167,6 +3231,7 @@ function settingsHtml() {
                     <label class="checkbox_label"><input type="checkbox" id="rpgd-enable"> <span>${escapeHtml(t('set_enable'))}</span></label>
                 </div>
                 <div class="rd-srow"><label for="rpgd-lang">🌐 ${escapeHtml(t('set_lang').replace(/[:：]\s*$/, ''))}</label><select id="rpgd-lang" class="text_pole">${opt('en', settings.language, 'English')}${opt('ru', settings.language, 'Русский')}</select></div>
+                <div class="rd-srow"><label for="rpgd-bookscale">📖 ${escapeHtml(t('set_bookscale'))}</label><input id="rpgd-bookscale" class="text_pole" type="number" min="80" max="160" step="5"></div>
                 <div class="rd-srow"><label for="rpgd-outlang">✍️ ${escapeHtml(t('set_output_lang').replace(/[:：]\s*$/, ''))}</label><select id="rpgd-outlang" class="text_pole">${opt('follow', settings.outputLang, t('lang_follow'))}${opt('en', settings.outputLang, t('lang_en'))}${opt('ru', settings.outputLang, t('lang_ru'))}</select></div>
                 ${sub(`💾 ${escapeHtml(t('set_files_h'))}`, `<div class="rd-tools">
                     <button id="rpgd-export" class="menu_button rd-tool">⤓ ${escapeHtml(t('export_btn'))}</button><button id="rpgd-import" class="menu_button rd-tool">⤒ ${escapeHtml(t('import_btn'))}</button>
@@ -3238,6 +3303,7 @@ function bindSettings() {
     set('rpgd-useembed', 'useEmbeddings', 'check'); set('rpgd-emburl', 'embedUrl', 'str'); set('rpgd-embkey', 'embedKey', 'str'); set('rpgd-embmodel', 'embedModel', 'str');
     const ck = (id, key) => { const el = $(id); if (!el) return; el.checked = settings[key] !== false; el.onchange = () => { settings[key] = el.checked; saveSettings(); postSettingChange(); }; };
     ck('rpgd-whohere', 'whoHere'); ck('rpgd-bondssync', 'bondsSync'); ck('rpgd-mergepeople', 'mergePeople');
+    { const bs = $('rpgd-bookscale'); if (bs) { bs.value = Number(settings.bookScale) || 125; bs.onchange = () => { const v = Math.max(80, Math.min(160, parseInt(bs.value, 10) || 125)); settings.bookScale = v; bs.value = v; saveSettings(); try { if (document.getElementById('rpg-diary-modal')?.classList.contains('visible')) fitBook(); } catch (e) { /* closed */ } }; } }
     ck('rpgd-sendbond', 'sendBond'); ck('rpgd-sendevents', 'sendEvents'); ck('rpgd-sendpeople', 'sendPeople'); ck('rpgd-sendgifts', 'sendGifts'); ck('rpgd-sendplaces', 'sendPlaces'); ck('rpgd-sendgloss', 'sendGloss');
     const mp = $('rpgd-mergepeople'); if (mp) mp.addEventListener('change', () => { tab = 0; bondSel = 0; try { if (document.getElementById('rpg-diary-modal')?.classList.contains('visible')) renderPanel(); } catch (e) { /* closed */ } }); ck('rpgd-anchorscene', 'anchorSceneOnly'); ck('rpgd-trimcarried', 'trimCarried');
     ck('rpgd-minscore', 'ragMinScore'); ck('rpgd-skipknown', 'skipKnown'); ck('rpgd-scenesplit', 'sceneSplit'); ck('rpgd-ctxheaders', 'ctxHeaders');
@@ -3338,6 +3404,9 @@ jQuery(() => {
 window.RPG = window.RPG || {};
 window.RPG.diary = {
     available: true,
+    // open the book (Suite Menu's "Diary" opens this one), close it
+    open: (opts) => { if (!settings.enabled || !chatKey()) return false; bigFromMenu = !!(opts && opts.big); openModal(); return true; },
+    close: () => closeModal(),
     isEnabled: () => !!settings.enabled,
     // what the memory search looks through right now (read-only: kind, date, place, who, length)
     pieces: () => (state ? memoryChunks().map(c => ({ type: c.type, date: c.date || '', loc: c.loc || c.extra || '', who: c.who || '', len: String(c.text || '').length, head: String(c.text || '').slice(0, 60) })) : []),
