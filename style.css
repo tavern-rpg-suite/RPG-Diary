@@ -367,30 +367,3 @@
 /* the compacted draft: read it in a small scrolling window, the buttons stay in view */
 #rpg-diary-root .rd-draft-full > summary { cursor: pointer; margin: 4px 0; }
 #rpg-diary-root .rd-draft-full .rd-draft-t { max-height: 150px; overflow-y: auto; padding-right: 4px; font-size: 12.5px; line-height: 1.45; }
-
-/* ============ a phone: one page at a time, nearly full size ============ */
-#rpg-diary-modal.rd-onepage { top: 4px; }
-#rpg-diary-modal.rd-onepage #rpg-diary-drag { margin-bottom: 6px; min-width: 0; max-width: calc(100vw - 16px); }
-#rpg-diary-root .rd-book.rd-one { width: 376px; }
-#rpg-diary-root .rd-book.rd-one[data-side="L"] .rd-page.right,
-#rpg-diary-root .rd-book.rd-one[data-side="R"] .rd-page.left { display: none; }
-#rpg-diary-root .rd-book.rd-one .rd-page { border-radius: 5px; box-shadow: inset 0 0 34px -20px rgba(60, 40, 15, .55); }
-#rpg-diary-root .rd-book.rd-one .rd-spine { display: none; }
-#rpg-diary-root .rd-book.rd-one.rd-turning .rd-page { animation: rd-mturn .36s cubic-bezier(.2, .8, .3, 1); transform-origin: left center; }
-@keyframes rd-mturn { from { transform: perspective(900px) rotateY(-70deg); opacity: .3; } to { transform: none; opacity: 1; } }
-#rpg-diary-root .rd-mflip { display: none; }
-#rpg-diary-root .rd-book.rd-one.open .rd-mflip {
-    display: block; position: absolute; z-index: 8; top: -11px; right: 22px;
-    padding: 3px 12px; border-radius: 11px; cursor: pointer;
-    font: 700 10.5px/1.3 "PT Mono", "Consolas", monospace; letter-spacing: 1.2px; text-transform: uppercase;
-    color: #f1e7cf; background: linear-gradient(135deg, #8a2c23, #591a15); border: 1px solid #b8902f;
-    box-shadow: 0 3px 0 #3a120d, 0 6px 12px rgba(0, 0, 0, .35); transition: transform .12s ease, box-shadow .12s ease;
-}
-#rpg-diary-root .rd-book.rd-one.open .rd-mflip:active { transform: translateY(3px); box-shadow: 0 0 0 #3a120d, 0 3px 8px rgba(0, 0, 0, .3); }
-#rpg-diary-root .rd-book.rd-one.open .rd-mflip:focus-visible { outline: 2px solid #e6cf86; outline-offset: 2px; }
-/* fingers: a little more room on what is tapped */
-@media (pointer: coarse) {
-    #rpg-diary-root .rd-tab { min-height: 30px; }
-}
-@media (prefers-reduced-motion: reduce) { #rpg-diary-root .rd-book.rd-one.rd-turning .rd-page { animation: none; } }
-#rpg-diary-root .rd-book.rd-one .rd-page { height: var(--rd-ph, 466px); }
