@@ -142,9 +142,10 @@ const I18N = {
         set_injmode: 'Placement:', inj_depth: 'In recent context (at depth)', inj_top: 'As a memory header (chat start)', inj_both: 'Both',
         set_injnew: 'Inject on a new / low-context chat', set_injfull: 'Also pull diary entries when context gets full (RAG)',
         set_injdiary: 'Include diary entries in the injection', set_ragtoggle: 'Force RAG retrieval on (ignore context size)',
-        set_injdepth: 'Injection depth:', set_injentries: 'Diary entries to inject:', set_injbudget: 'Max characters of diary injected:',
+        set_injdepth: 'Injection depth:', set_inchat: 'Insert in chat', set_depth_off: 'Works with "Insert in chat"', set_injentries: 'Diary entries to inject:', set_injbudget: 'Max characters of diary injected:',
         set_notes_ai: 'Let the AI see my personal Notes too',
         set_auto_h: 'Automation', set_autoentry: 'Auto-write a diary entry every N game-days', set_autodays: 'Game-days between entries:',
+        set_bookscale: 'Book size on a big screen, %', m_to_r: 'Turn the page ›', m_to_l: '‹ Back',
         set_output_lang: 'AI writes in:', lang_follow: 'Same as UI', lang_en: 'English', lang_ru: 'Russian',
         set_embed_h: 'Vector RAG (optional — needs an embeddings endpoint)', set_useembed: 'Use vector embeddings for retrieval (falls back to keyword RAG)',
         set_embed_url_ph: 'blank = use the API URL above', set_embed_note: 'OpenRouter supports embeddings — leave URL/key blank to reuse the API above, and prefix the model with its provider (e.g. openai/text-embedding-3-small).',
@@ -259,9 +260,10 @@ const I18N = {
         set_injmode: 'Куда вставлять:', inj_depth: 'В недавний контекст (на глубину)', inj_top: 'Заголовком памяти (начало чата)', inj_both: 'И то, и то',
         set_injnew: 'Вставлять в новом / пустом чате', set_injfull: 'Подтягивать записи дневника при заполнении контекста (RAG)',
         set_injdiary: 'Включать записи дневника в инъекцию', set_ragtoggle: 'Всегда включать RAG-подбор (игнорировать размер контекста)',
-        set_injdepth: 'Глубина инъекции:', set_injentries: 'Сколько записей вставлять:', set_injbudget: 'Макс. символов дневника в инъекции:',
+        set_injdepth: 'Глубина инъекции:', set_inchat: 'Вставлять в чат', set_depth_off: 'Работает с «Вставлять в чат»', set_injentries: 'Сколько записей вставлять:', set_injbudget: 'Макс. символов дневника в инъекции:',
         set_notes_ai: 'Показывать ИИ и мои личные Заметки',
         set_auto_h: 'Автоматизация', set_autoentry: 'Авто-запись в дневник каждые N игровых дней', set_autodays: 'Игровых дней между записями:',
+        set_bookscale: 'Размер книги на большом экране, %', m_to_r: 'Перевернуть ›', m_to_l: '‹ Назад',
         set_output_lang: 'ИИ пишет на:', lang_follow: 'Как интерфейс', lang_en: 'Английском', lang_ru: 'Русском',
         set_embed_h: 'Векторный RAG (опционально — нужен эмбеддинг-эндпоинт)', set_useembed: 'Использовать векторные эмбеддинги для поиска (иначе — поиск по словам)',
         set_embed_url_ph: 'пусто = взять URL API выше', set_embed_note: 'OpenRouter поддерживает эмбеддинги — оставь URL/ключ пустыми, чтобы взять API выше, и указывай модель с префиксом провайдера (например openai/text-embedding-3-small).',
@@ -296,6 +298,7 @@ const defaultSettings = {
     libraryMode: 'update',      // 'update' = one living memory per chat · 'append' = a new one each time
     autoEvery: 0,               // auto-summarize every N messages (0 = off; works without a Scene Card)         // master switch: off = collect only, never touch the prompt
     injectMode: 'depth',        // 'depth' | 'top' | 'both'
+    inChat: false,              // off: everything goes to the top of the prompt, as always; on: the "depth" memory goes into the chat at its depth (a local model then re-reads only the end); "top" stays at the top
     injectOnNew: true,
     injectDiary: true,
     injectWhenFull: true,
@@ -309,6 +312,7 @@ const defaultSettings = {
     compactTemp: 0.5,        // the temperature of 🗜 Compact (copying: lower than the summary's)
     bondsSync: true,         // with RPG Status Bar + Bonds: its live relationship on the People page, and its level taken at each summary
     mergePeople: true,       // "Bonds" and "NPCs" as one tab, "People"
+    bookScale: 125,          // % — how large the open book may grow on a big screen (it always fits the screen)
     // what goes to the AI from the book (unticked: kept in the book, not sent)
     sendBond: true, sendEvents: true, sendPeople: true, sendGifts: true, sendPlaces: true, sendGloss: true,           // full cards of the people in the scene (or just mentioned), straight from the book
     // finding memories (all done by code unless marked)
@@ -1856,6 +1860,8 @@ function npcCard(n, levelShown) {
     const lvl = typeof n.trust === 'number' && !levelShown && !bondsTells(n.name) ? ` [${t('relationship').toLowerCase()} ${n.trust}/100]` : '';
     return `• ${n.name}${n.role ? ' — ' + n.role : ''}${lvl}${bits.length ? '. ' + bits.join('. ') : ''}`;
 }
+// where the "depth" memory goes: the top of the prompt (as always), or the chat at its depth
+function injPos() { return settings.inChat ? 1 : 2; }
 function buildInjection() {
     // 'both' mode uses a second prompt key for the top-of-context copy; both keys are cleared together
     const TOP_KEY = PROMPT_KEY + '_top';
@@ -1951,12 +1957,12 @@ function buildInjection() {
     if (settings.injectMode === 'both') {
         // "both" was previously identical to "top" (a single call can only take one depth) — now the
         // memory really goes to BOTH places: a header at the start AND a reminder near the recent turns.
-        setExtensionPrompt(PROMPT_KEY, text, 2, settings.injectDepth || 4, false, extension_prompt_roles.SYSTEM);
+        setExtensionPrompt(PROMPT_KEY, text, injPos(), settings.injectDepth || 4, false, extension_prompt_roles.SYSTEM);
         setExtensionPrompt(TOP_KEY, text, 2, 9999, false, extension_prompt_roles.SYSTEM);
     } else {
         setExtensionPrompt(TOP_KEY, '', 2, 0, false, extension_prompt_roles.SYSTEM);
         const depth = (settings.injectMode === 'top') ? 9999 : (settings.injectDepth || 4);
-        setExtensionPrompt(PROMPT_KEY, text, 2, depth, false, extension_prompt_roles.SYSTEM);
+        setExtensionPrompt(PROMPT_KEY, text, settings.injectMode === 'top' ? 2 : injPos(), depth, false, extension_prompt_roles.SYSTEM);
     }
 }
 
@@ -2731,6 +2737,7 @@ function renderPanel() {
     });
     wire();
     renderNav();
+    if (editing && isOnePage()) setSide('R');      // a form opens on the right page: on a phone, turn to it
 }
 function renderNav() {
     const nav = document.getElementById('rd-nav');
@@ -2743,14 +2750,14 @@ function renderNav() {
 }
 function wire() {
     const root = document.getElementById('rpg-diary-root');
-    root.querySelectorAll('.rd-tab').forEach(b => b.onclick = () => { const n = +b.dataset.t; if (tab === n && !editing) return; tab = n; editing = null; renderPanel(); });
-    root.querySelectorAll('.rd-frow[data-e]').forEach(el => el.onclick = () => turnTo(+el.dataset.e));
+    root.querySelectorAll('.rd-tab').forEach(b => b.onclick = () => { const n = +b.dataset.t; if (tab === n && !editing) { setSide('L'); return; } tab = n; editing = null; mobileSide = 'L'; renderPanel(); setSide('L'); });
+    root.querySelectorAll('.rd-frow[data-e]').forEach(el => el.onclick = () => { turnTo(+el.dataset.e); setSide('R'); });
     root.querySelectorAll('.rd-lrow[data-i]').forEach(el => el.onclick = () => {
         const i = +el.dataset.i, id = TAB_IDS[tab];
         if (id === 'bond') bondSel = i; else if (id === 'evt') evtSel = i; else if (id === 'npc') npcSel = i; else if (id === 'gift') giftSel = i;
-        renderPanel();
+        renderPanel(); setSide('R');
     });
-    root.querySelectorAll('.rd-gcell[data-i]').forEach(el => el.onclick = () => { locSel = +el.dataset.i; renderPanel(); });
+    root.querySelectorAll('.rd-gcell[data-i]').forEach(el => el.onclick = () => { locSel = +el.dataset.i; renderPanel(); setSide('R'); });
     const sum = root.querySelector('.rpg-d-sum'); if (sum) sum.onclick = () => summarizeChat(false);
     const rsum = root.querySelector('.rpg-d-resum'); if (rsum) rsum.onclick = () => { if (confirm(t('resum_confirm'))) summarizeChat(true); };
     const chk = root.querySelector('.rpg-d-check'); if (chk) chk.onclick = checkContradictions;
@@ -3038,19 +3045,72 @@ function makeModalDraggable(win, handle) {
         };
     };
 }
+/* The book fits the screen. On a big one it may grow (the size in the settings); on a phone it opens
+   ONE page at a time at nearly full size — two pages side by side were scaled down to half and could
+   not be read. The page turns over with the flip at its corner, and choosing a record, a person or a
+   place turns to the page that shows it. */
+let mobileSide = 'L';
+function isOnePage() { return window.innerWidth < 640; }
 function fitBook() {
     const book = document.getElementById('rd-book'); if (!book) return;
-    const avail = Math.min(window.innerWidth - 40, 780);
-    const s = Math.min(1, avail / 742);
+    const one = isOnePage();
+    book.classList.toggle('rd-one', one);
+    book.dataset.side = mobileSide;
+    const modal = document.getElementById('rpg-diary-modal');
+    if (modal) modal.classList.toggle('rd-onepage', one);
+    const natW = one ? 404 : 760;
+    const cap = one ? 1.15 : Math.max(0.8, Math.min(1.6, (Number(settings.bookScale) || 125) / 100));
+    let s;
+    if (one) {
+        // the width decides the size; the page then grows down to use the phone's height
+        s = Math.max(0.4, Math.min(cap, (window.innerWidth - 12) / natW));
+        book.style.removeProperty('--rd-ph');
+        const page = book.querySelector('.rd-page');
+        const extra = page && page.offsetHeight ? Math.max(0, book.offsetHeight - page.offsetHeight) : 22;   // hidden: the usual frame
+        const ph = Math.max(466, Math.min(1000, Math.floor((window.innerHeight - 64) / s - extra)));
+        book.style.setProperty('--rd-ph', ph + 'px');
+    } else {
+        book.style.removeProperty('--rd-ph');
+        s = Math.max(0.4, Math.min(cap, (window.innerWidth - 40) / natW, (window.innerHeight - 80) / Math.max(480, book.offsetHeight || 520)));
+    }
+    const natH = Math.max(480, book.offsetHeight || 520);
     book.style.transform = `scale(${s})`;
+    // the scaled book takes the room it shows, so the page below it does not jump
+    const fit = book.parentElement; if (fit) fit.style.height = Math.ceil(natH * s) + 'px';
+    syncMobileFlip();
+}
+function setSide(side) {
+    mobileSide = side === 'R' ? 'R' : 'L';
+    const book = document.getElementById('rd-book'); if (!book) return;
+    if (book.dataset.side === mobileSide) return;
+    book.dataset.side = mobileSide;
+    if (isOnePage()) { book.classList.remove('rd-turning'); void book.offsetWidth; book.classList.add('rd-turning'); }
+    syncMobileFlip();
+}
+function syncMobileFlip() {
+    const b = document.getElementById('rd-mflip'); if (!b) return;
+    const toR = mobileSide === 'L';
+    b.textContent = toR ? t('m_to_r') : t('m_to_l');
+    b.setAttribute('aria-label', b.textContent);
+    b.dataset.to = toR ? 'R' : 'L';
 }
 function openModal() {
     loadState(); ensureModal();
+    if (!document.getElementById('rd-mflip')) {
+        const spread = document.querySelector('#rd-book .rd-cover');
+        if (spread) {
+            const fb = document.createElement('button');
+            fb.type = 'button'; fb.id = 'rd-mflip'; fb.className = 'rd-mflip';
+            fb.onclick = (e) => { e.stopPropagation(); setSide(fb.dataset.to === 'R' ? 'R' : 'L'); };
+            spread.appendChild(fb);
+        }
+    }
     const bk = document.getElementById('rd-book');
     if (bk) { if (bookOpen) { bk.classList.remove('closed'); bk.classList.add('open'); } else { bk.classList.add('closed'); bk.classList.remove('open'); } }
     renderPanel(); fitBook();
     const m = document.getElementById('rpg-diary-modal');
     m.classList.add('visible');
+    fitBook();                                     // measured again now that it is on screen
     const r = m.getBoundingClientRect();
     if (r.width && (r.right < 60 || r.left > window.innerWidth - 60 || r.bottom < 40 || r.top > window.innerHeight - 40)) { m.style.left = ''; m.style.top = ''; m.style.transform = ''; }
     scheduleEmbed();
@@ -3167,6 +3227,7 @@ function settingsHtml() {
                     <label class="checkbox_label"><input type="checkbox" id="rpgd-enable"> <span>${escapeHtml(t('set_enable'))}</span></label>
                 </div>
                 <div class="rd-srow"><label for="rpgd-lang">🌐 ${escapeHtml(t('set_lang').replace(/[:：]\s*$/, ''))}</label><select id="rpgd-lang" class="text_pole">${opt('en', settings.language, 'English')}${opt('ru', settings.language, 'Русский')}</select></div>
+                <div class="rd-srow"><label for="rpgd-bookscale">📖 ${escapeHtml(t('set_bookscale'))}</label><input id="rpgd-bookscale" class="text_pole" type="number" min="80" max="160" step="5"></div>
                 <div class="rd-srow"><label for="rpgd-outlang">✍️ ${escapeHtml(t('set_output_lang').replace(/[:：]\s*$/, ''))}</label><select id="rpgd-outlang" class="text_pole">${opt('follow', settings.outputLang, t('lang_follow'))}${opt('en', settings.outputLang, t('lang_en'))}${opt('ru', settings.outputLang, t('lang_ru'))}</select></div>
                 ${sub(`💾 ${escapeHtml(t('set_files_h'))}`, `<div class="rd-tools">
                     <button id="rpgd-export" class="menu_button rd-tool">⤓ ${escapeHtml(t('export_btn'))}</button><button id="rpgd-import" class="menu_button rd-tool">⤒ ${escapeHtml(t('import_btn'))}</button>
@@ -3181,7 +3242,7 @@ function settingsHtml() {
                     <div class="rd-srow"><label for="rpgd-injmode">${escapeHtml(t('set_injmode').replace(/[:：]\s*$/, ''))}</label><select id="rpgd-injmode" class="text_pole">${opt('depth', settings.injectMode, t('inj_depth'))}${opt('top', settings.injectMode, t('inj_top'))}${opt('both', settings.injectMode, t('inj_both'))}</select></div>
                     ${chk('rpgd-injnew', 'set_injnew')}${chk('rpgd-injdiary', 'set_injdiary')}${chk('rpgd-injfull', 'set_injfull')}${chk('rpgd-ragtoggle', 'set_ragtoggle')}${chk('rpgd-notesai', 'set_notes_ai')}
                     ${chk('rpgd-bondssync', 'set_bondssync')}${chk('rpgd-mergepeople', 'set_mergepeople')}${chk('rpgd-whohere', 'set_whohere')}${chk('rpgd-anchorscene', 'set_anchor_scene')}${chk('rpgd-trimcarried', 'set_trim_carried')}
-                    ${num('rpgd-injdepth', 'set_injdepth', 'min="0" max="20"')}${num('rpgd-injentries', 'set_injentries', 'min="0" max="12"')}${num('rpgd-injbudget', 'set_injbudget', 'min="200" max="6000"')}`)}
+                    ${chk('rpgd-inchat', 'set_inchat')}${num('rpgd-injdepth', 'set_injdepth', 'min="0" max="20"')}${num('rpgd-injentries', 'set_injentries', 'min="0" max="12"')}${num('rpgd-injbudget', 'set_injbudget', 'min="200" max="6000"')}`)}
                 ${sub(`📤 ${escapeHtml(t('set_send_h'))}`, `<div class="rd-sendgrid">
                     ${chk('rpgd-sendbond', 'send_bond')}${chk('rpgd-sendevents', 'send_events')}${chk('rpgd-sendpeople', 'send_people')}
                     ${chk('rpgd-sendgifts', 'send_gifts')}${chk('rpgd-sendplaces', 'send_places')}${chk('rpgd-sendgloss', 'send_gloss')}</div>${note('set_send_note')}`)}
@@ -3228,7 +3289,12 @@ function bindSettings() {
     set('rpgd-injmode', 'injectMode', 'str');
     set('rpgd-injnew', 'injectOnNew', 'check'); set('rpgd-injdiary', 'injectDiary', 'check'); set('rpgd-injfull', 'injectWhenFull', 'check');
     set('rpgd-ragtoggle', 'ragToggle', 'check'); set('rpgd-notesai', 'notesToAI', 'check');
-    set('rpgd-injdepth', 'injectDepth', 'int'); set('rpgd-injentries', 'injectEntries', 'int'); set('rpgd-injbudget', 'injectBudget', 'int');
+    set('rpgd-injdepth', 'injectDepth', 'int');
+    // the depth only means something in the chat: at the top of the prompt SillyTavern ignores it
+    { const ic = $('rpgd-inchat'), dp = $('rpgd-injdepth');
+      const lock = () => { if (dp) { dp.style.opacity = settings.inChat ? '' : '0.55'; dp.title = settings.inChat ? '' : t('set_depth_off'); } };
+      if (ic) { ic.checked = !!settings.inChat; ic.onchange = () => { settings.inChat = ic.checked; saveSettings(); lock(); postSettingChange(); }; }
+      lock(); } set('rpgd-injentries', 'injectEntries', 'int'); set('rpgd-injbudget', 'injectBudget', 'int');
     set('rpgd-autoentry', 'autoEntry', 'check'); set('rpgd-autodays', 'autoEntryDays', 'int');
     set('rpgd-autosum', 'autoSummarize', 'check'); set('rpgd-autoevery', 'autoEvery', 'int'); set('rpgd-librarymode', 'libraryMode', 'str'); set('rpgd-locknew', 'lockNewMemory', 'check');
     set('rpgd-carrymode', 'carryMode', 'str'); set('rpgd-carrydossier', 'carryDossier', 'check'); set('rpgd-carryscenes', 'carryScenes', 'check'); set('rpgd-carryentries', 'carryEntries', 'check');
@@ -3238,6 +3304,7 @@ function bindSettings() {
     set('rpgd-useembed', 'useEmbeddings', 'check'); set('rpgd-emburl', 'embedUrl', 'str'); set('rpgd-embkey', 'embedKey', 'str'); set('rpgd-embmodel', 'embedModel', 'str');
     const ck = (id, key) => { const el = $(id); if (!el) return; el.checked = settings[key] !== false; el.onchange = () => { settings[key] = el.checked; saveSettings(); postSettingChange(); }; };
     ck('rpgd-whohere', 'whoHere'); ck('rpgd-bondssync', 'bondsSync'); ck('rpgd-mergepeople', 'mergePeople');
+    { const bs = $('rpgd-bookscale'); if (bs) { bs.value = Number(settings.bookScale) || 125; bs.onchange = () => { const v = Math.max(80, Math.min(160, parseInt(bs.value, 10) || 125)); settings.bookScale = v; bs.value = v; saveSettings(); try { if (document.getElementById('rpg-diary-modal')?.classList.contains('visible')) fitBook(); } catch (e) { /* closed */ } }; } }
     ck('rpgd-sendbond', 'sendBond'); ck('rpgd-sendevents', 'sendEvents'); ck('rpgd-sendpeople', 'sendPeople'); ck('rpgd-sendgifts', 'sendGifts'); ck('rpgd-sendplaces', 'sendPlaces'); ck('rpgd-sendgloss', 'sendGloss');
     const mp = $('rpgd-mergepeople'); if (mp) mp.addEventListener('change', () => { tab = 0; bondSel = 0; try { if (document.getElementById('rpg-diary-modal')?.classList.contains('visible')) renderPanel(); } catch (e) { /* closed */ } }); ck('rpgd-anchorscene', 'anchorSceneOnly'); ck('rpgd-trimcarried', 'trimCarried');
     ck('rpgd-minscore', 'ragMinScore'); ck('rpgd-skipknown', 'skipKnown'); ck('rpgd-scenesplit', 'sceneSplit'); ck('rpgd-ctxheaders', 'ctxHeaders');
@@ -3338,6 +3405,9 @@ jQuery(() => {
 window.RPG = window.RPG || {};
 window.RPG.diary = {
     available: true,
+    // open the book (Suite Menu's "Diary" opens this one), close it
+    open: () => { if (!settings.enabled || !chatKey()) return false; openModal(); return true; },
+    close: () => closeModal(),
     isEnabled: () => !!settings.enabled,
     // what the memory search looks through right now (read-only: kind, date, place, who, length)
     pieces: () => (state ? memoryChunks().map(c => ({ type: c.type, date: c.date || '', loc: c.loc || c.extra || '', who: c.who || '', len: String(c.text || '').length, head: String(c.text || '').slice(0, 60) })) : []),
