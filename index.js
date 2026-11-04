@@ -142,7 +142,7 @@ const I18N = {
         set_injmode: 'Placement:', inj_depth: 'In recent context (at depth)', inj_top: 'As a memory header (chat start)', inj_both: 'Both',
         set_injnew: 'Inject on a new / low-context chat', set_injfull: 'Also pull diary entries when context gets full (RAG)',
         set_injdiary: 'Include diary entries in the injection', set_ragtoggle: 'Force RAG retrieval on (ignore context size)',
-        set_injdepth: 'Injection depth:', set_injentries: 'Diary entries to inject:', set_injbudget: 'Max characters of diary injected:',
+        set_injdepth: 'Injection depth:', set_inchat: 'Insert in chat', set_depth_off: 'Works with "Insert in chat"', set_injentries: 'Diary entries to inject:', set_injbudget: 'Max characters of diary injected:',
         set_notes_ai: 'Let the AI see my personal Notes too',
         set_auto_h: 'Automation', set_autoentry: 'Auto-write a diary entry every N game-days', set_autodays: 'Game-days between entries:',
         set_bookscale: 'Book size when opened from the Suite Menu, %', m_to_r: 'Turn the page ›', m_to_l: '‹ Back',
@@ -260,7 +260,7 @@ const I18N = {
         set_injmode: 'Куда вставлять:', inj_depth: 'В недавний контекст (на глубину)', inj_top: 'Заголовком памяти (начало чата)', inj_both: 'И то, и то',
         set_injnew: 'Вставлять в новом / пустом чате', set_injfull: 'Подтягивать записи дневника при заполнении контекста (RAG)',
         set_injdiary: 'Включать записи дневника в инъекцию', set_ragtoggle: 'Всегда включать RAG-подбор (игнорировать размер контекста)',
-        set_injdepth: 'Глубина инъекции:', set_injentries: 'Сколько записей вставлять:', set_injbudget: 'Макс. символов дневника в инъекции:',
+        set_injdepth: 'Глубина инъекции:', set_inchat: 'Вставлять в чат', set_depth_off: 'Работает с «Вставлять в чат»', set_injentries: 'Сколько записей вставлять:', set_injbudget: 'Макс. символов дневника в инъекции:',
         set_notes_ai: 'Показывать ИИ и мои личные Заметки',
         set_auto_h: 'Автоматизация', set_autoentry: 'Авто-запись в дневник каждые N игровых дней', set_autodays: 'Игровых дней между записями:',
         set_bookscale: 'Размер книги, открытой из меню, %', m_to_r: 'Перевернуть ›', m_to_l: '‹ Назад',
@@ -298,6 +298,7 @@ const defaultSettings = {
     libraryMode: 'update',      // 'update' = one living memory per chat · 'append' = a new one each time
     autoEvery: 0,               // auto-summarize every N messages (0 = off; works without a Scene Card)         // master switch: off = collect only, never touch the prompt
     injectMode: 'depth',        // 'depth' | 'top' | 'both'
+    inChat: false,              // off: everything goes to the top of the prompt, as always; on: the "depth" memory goes into the chat at its depth (a local model then re-reads only the end); "top" stays at the top
     injectOnNew: true,
     injectDiary: true,
     injectWhenFull: true,
@@ -1859,6 +1860,8 @@ function npcCard(n, levelShown) {
     const lvl = typeof n.trust === 'number' && !levelShown && !bondsTells(n.name) ? ` [${t('relationship').toLowerCase()} ${n.trust}/100]` : '';
     return `• ${n.name}${n.role ? ' — ' + n.role : ''}${lvl}${bits.length ? '. ' + bits.join('. ') : ''}`;
 }
+// where the "depth" memory goes: the top of the prompt (as always), or the chat at its depth
+function injPos() { return settings.inChat ? 1 : 2; }
 function buildInjection() {
     // 'both' mode uses a second prompt key for the top-of-context copy; both keys are cleared together
     const TOP_KEY = PROMPT_KEY + '_top';
@@ -1954,12 +1957,12 @@ function buildInjection() {
     if (settings.injectMode === 'both') {
         // "both" was previously identical to "top" (a single call can only take one depth) — now the
         // memory really goes to BOTH places: a header at the start AND a reminder near the recent turns.
-        setExtensionPrompt(PROMPT_KEY, text, 2, settings.injectDepth || 4, false, extension_prompt_roles.SYSTEM);
+        setExtensionPrompt(PROMPT_KEY, text, injPos(), settings.injectDepth || 4, false, extension_prompt_roles.SYSTEM);
         setExtensionPrompt(TOP_KEY, text, 2, 9999, false, extension_prompt_roles.SYSTEM);
     } else {
         setExtensionPrompt(TOP_KEY, '', 2, 0, false, extension_prompt_roles.SYSTEM);
         const depth = (settings.injectMode === 'top') ? 9999 : (settings.injectDepth || 4);
-        setExtensionPrompt(PROMPT_KEY, text, 2, depth, false, extension_prompt_roles.SYSTEM);
+        setExtensionPrompt(PROMPT_KEY, text, settings.injectMode === 'top' ? 2 : injPos(), depth, false, extension_prompt_roles.SYSTEM);
     }
 }
 
@@ -3246,7 +3249,7 @@ function settingsHtml() {
                     <div class="rd-srow"><label for="rpgd-injmode">${escapeHtml(t('set_injmode').replace(/[:：]\s*$/, ''))}</label><select id="rpgd-injmode" class="text_pole">${opt('depth', settings.injectMode, t('inj_depth'))}${opt('top', settings.injectMode, t('inj_top'))}${opt('both', settings.injectMode, t('inj_both'))}</select></div>
                     ${chk('rpgd-injnew', 'set_injnew')}${chk('rpgd-injdiary', 'set_injdiary')}${chk('rpgd-injfull', 'set_injfull')}${chk('rpgd-ragtoggle', 'set_ragtoggle')}${chk('rpgd-notesai', 'set_notes_ai')}
                     ${chk('rpgd-bondssync', 'set_bondssync')}${chk('rpgd-mergepeople', 'set_mergepeople')}${chk('rpgd-whohere', 'set_whohere')}${chk('rpgd-anchorscene', 'set_anchor_scene')}${chk('rpgd-trimcarried', 'set_trim_carried')}
-                    ${num('rpgd-injdepth', 'set_injdepth', 'min="0" max="20"')}${num('rpgd-injentries', 'set_injentries', 'min="0" max="12"')}${num('rpgd-injbudget', 'set_injbudget', 'min="200" max="6000"')}`)}
+                    ${chk('rpgd-inchat', 'set_inchat')}${num('rpgd-injdepth', 'set_injdepth', 'min="0" max="20"')}${num('rpgd-injentries', 'set_injentries', 'min="0" max="12"')}${num('rpgd-injbudget', 'set_injbudget', 'min="200" max="6000"')}`)}
                 ${sub(`📤 ${escapeHtml(t('set_send_h'))}`, `<div class="rd-sendgrid">
                     ${chk('rpgd-sendbond', 'send_bond')}${chk('rpgd-sendevents', 'send_events')}${chk('rpgd-sendpeople', 'send_people')}
                     ${chk('rpgd-sendgifts', 'send_gifts')}${chk('rpgd-sendplaces', 'send_places')}${chk('rpgd-sendgloss', 'send_gloss')}</div>${note('set_send_note')}`)}
@@ -3293,7 +3296,12 @@ function bindSettings() {
     set('rpgd-injmode', 'injectMode', 'str');
     set('rpgd-injnew', 'injectOnNew', 'check'); set('rpgd-injdiary', 'injectDiary', 'check'); set('rpgd-injfull', 'injectWhenFull', 'check');
     set('rpgd-ragtoggle', 'ragToggle', 'check'); set('rpgd-notesai', 'notesToAI', 'check');
-    set('rpgd-injdepth', 'injectDepth', 'int'); set('rpgd-injentries', 'injectEntries', 'int'); set('rpgd-injbudget', 'injectBudget', 'int');
+    set('rpgd-injdepth', 'injectDepth', 'int');
+    // the depth only means something in the chat: at the top of the prompt SillyTavern ignores it
+    { const ic = $('rpgd-inchat'), dp = $('rpgd-injdepth');
+      const lock = () => { if (dp) { dp.style.opacity = settings.inChat ? '' : '0.55'; dp.title = settings.inChat ? '' : t('set_depth_off'); } };
+      if (ic) { ic.checked = !!settings.inChat; ic.onchange = () => { settings.inChat = ic.checked; saveSettings(); lock(); postSettingChange(); }; }
+      lock(); } set('rpgd-injentries', 'injectEntries', 'int'); set('rpgd-injbudget', 'injectBudget', 'int');
     set('rpgd-autoentry', 'autoEntry', 'check'); set('rpgd-autodays', 'autoEntryDays', 'int');
     set('rpgd-autosum', 'autoSummarize', 'check'); set('rpgd-autoevery', 'autoEvery', 'int'); set('rpgd-librarymode', 'libraryMode', 'str'); set('rpgd-locknew', 'lockNewMemory', 'check');
     set('rpgd-carrymode', 'carryMode', 'str'); set('rpgd-carrydossier', 'carryDossier', 'check'); set('rpgd-carryscenes', 'carryScenes', 'check'); set('rpgd-carryentries', 'carryEntries', 'check');
