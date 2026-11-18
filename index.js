@@ -3060,6 +3060,7 @@ function fitBook() {
     const modal = document.getElementById('rpg-diary-modal');
     if (modal) modal.classList.toggle('rd-onepage', one);
     const natW = one ? 404 : 742;
+    const fit0 = book.parentElement; if (fit0) fit0.style.height = '';   // measure the book itself, not the last fitted box
     let s;
     if (one) {
         // the width decides the size; the page then grows down to use the phone's height

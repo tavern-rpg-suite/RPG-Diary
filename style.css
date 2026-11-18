@@ -47,7 +47,9 @@
     --navy:#2b4a63; --violet:#5e3a96; --teal:#356b63; --green:#4f7d3a; --amber:#b1802a;
     font-family:"Alegreya","Palatino Linotype","Book Antiqua",Palatino,Georgia,serif; color:var(--ink);
 }
-#rpg-diary-root .rd-fit { display:flex; justify-content:center; width:100%; }
+#rpg-diary-root .rd-fit { display:flex; justify-content:center; align-items:flex-start; width:100%; }
+/* flex-start: the fit box is given the SCALED height, and a stretched book would take that as its own —
+   the front cover (inset:0) then covered only part of a phone page */
 #rpg-diary-root .rd-book { position:relative; width:722px; transform-origin:top center; perspective:2000px; }
 
 #rpg-diary-root .rd-cover { position:relative; padding:15px; border-radius:10px 16px 16px 10px;
@@ -394,3 +396,6 @@
 }
 @media (prefers-reduced-motion: reduce) { #rpg-diary-root .rd-book.rd-one.rd-turning .rd-page { animation: none; } }
 #rpg-diary-root .rd-book.rd-one .rd-page { height: var(--rd-ph, 466px); }
+/* a phone: the cover's lines stay clear of the strap and wrap instead of running under it */
+#rpg-diary-root .rd-book.rd-one .rd-front { padding: 0 78px 0 26px; box-sizing: border-box; }
+#rpg-diary-root .rd-book.rd-one .rd-fc-sub { text-align: center; line-height: 1.7; max-width: 100%; }
