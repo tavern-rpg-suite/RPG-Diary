@@ -1,5 +1,6 @@
 import { getContext, extension_settings } from '../../../extensions.js';
 import { eventSource, event_types, saveSettingsDebounced, saveSettings as stSaveSettings, setExtensionPrompt, extension_prompt_roles } from '../../../../script.js';
+import './suite-core.js';   // the suite's shared core: one seal for the floating buttons, the request queue, one "when and where"
 
 const MODULE_NAME = 'rpg_diary';
 const PROMPT_KEY = 'rpg_diary_memory';
@@ -133,6 +134,7 @@ const I18N = {
         set_api: 'AI (OpenRouter) — used for summaries & entries', set_url: 'API URL', set_key: 'API key', set_model: 'Model', set_temp: 'Temperature',
         set_maxtok: "Max REPLY tokens", set_maxtok_note: "This limits what the AI WRITES (the memory + dossier it returns) — not the size of your chat. Your chat is read in parts, so a 300k-token chat is fine. Lower this only if your model rejects the request.",
         t_sum_many: 'This chat is long: summarizing it will make about {n} AI calls (it only happens once — later summaries read just the new messages). Continue?',
+        t_sum_badjson: "The memory is saved, but the model's reply with the records (events, people, places) could not be read — they were not updated this time. Summarize again, or try another model.",
         t_sum_trunc: "The AI's reply was cut off — raise 'Max reply tokens' in settings (or use a model with a bigger output limit), then summarize again.",
         set_inject_h: 'Hidden memory injection (invisible to you, seen by the AI)',
         set_injsummary: 'Include the summary text (uncheck to send only pins / RAG / relationships)',
@@ -251,6 +253,7 @@ const I18N = {
         set_api: 'ИИ (OpenRouter) — для резюме и записей', set_url: 'API URL', set_key: 'API-ключ', set_model: 'Модель', set_temp: 'Температура',
         set_maxtok: 'Макс. токенов ОТВЕТА', set_maxtok_note: 'Ограничивает то, что ИИ ПИШЕТ (память и досье в ответе) — а не размер твоего чата. Чат читается по частям, так что даже 300k токенов не проблема. Снижай, только если модель отказывается принимать запрос.',
         t_sum_many: 'Чат длинный: суммирование сделает примерно {n} запросов к ИИ (это разово — дальше читаются только новые сообщения). Продолжить?',
+        t_sum_badjson: 'Память сохранена, но ответ модели с записями (события, люди, места) не удалось прочитать — в этот раз они не обновились. Суммируй ещё раз или попробуй другую модель.',
         t_sum_trunc: 'Ответ ИИ оборвался — подними «Макс. токенов ответа» в настройках (или возьми модель с большим лимитом вывода) и суммируй заново.',
         set_inject_h: 'Скрытая инъекция памяти (тебе не видна, ИИ видит)',
         set_injsummary: 'Вставлять текст суммирования (сними — уйдут только 📌, RAG и отношения)',
@@ -505,11 +508,14 @@ function readScene() {
             let d = null;
             for (const m of ['get', 'state', 'now', 'getTime', 'current']) { if (typeof s[m] === 'function') { d = s[m](); break; } }
             if (d && typeof d === 'object') {
+                // the place: the suite's one answer (the newer of a move on the Map and the story's), else the card's
+                let wp = null;
+                try { wp = window.RPG && window.RPG.world && window.RPG.world.place ? window.RPG.world.place() : null; } catch (e) { wp = null; }
                 return {
                     label: d.timeLabel || d.label || [d.date, d.time].filter(Boolean).join(' · ') || d.time || null,
                     day: (typeof d.day === 'number') ? d.day : sceneDayNumber(d.date),
                     weather: d.weather || null, season: d.season || null,
-                    loc: d.location || d.loc || d.place || null
+                    loc: wp || d.location || d.loc || d.place || null
                 };
             }
         }
@@ -635,7 +641,9 @@ function refreshBorrowNote() {
         : `Empty — key and model are taken from "${SRC_LABEL[from] || from}". Fill in both to use your own.`;
 }
 
+let lastFinish = '';   // why the last reply ended, as the server says ('stop', 'length', or '' when it does not say)
 async function callAI(systemPrompt, userPrompt, maxTokens, temperature) {
+    lastFinish = '';
     if (!apiKey()) throw new Error('no-key');
     const url = (apiUrl() || 'https://openrouter.ai/api/v1').replace(/\/$/, '') + '/chat/completions';
     for (let i = 0; i < 2; i++) {
@@ -653,6 +661,7 @@ async function callAI(systemPrompt, userPrompt, maxTokens, temperature) {
             if (res.status === 429 && i === 0) { await new Promise(r => setTimeout(r, 2000)); continue; }
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const data = await res.json();
+            lastFinish = String((data.choices && data.choices[0] && data.choices[0].finish_reason) || '');   // 'length' = cut off by the token limit
             return (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content || '').trim();
         } catch (e) { if (i === 1) throw e; }
     }
@@ -672,12 +681,64 @@ function coerceText(v) {
     }
     return String(v).trim();
 }
+/* A local model's JSON (single quotes, a lost closing quote, a missing comma, // notes) — the
+   same repair the other extensions of the suite use. Only the punctuation is touched, never the words. */
+function repairModelJson(src) {
+    const t0 = String(src || '');
+    let out = '', inS = false, q = '"', isKey = false, k = 0;
+    const stack = [];   // the open { and [ around
+    const nextSolid = j => { while (j < t0.length && /\s/.test(t0[j])) j++; return j; };
+    for (; k < t0.length; k++) {
+        const c = t0[k];
+        if (inS) {
+            if (c === '\\') { if (t0[k + 1] === "'") out += "'"; else out += c + (t0[k + 1] ?? ''); k++; continue; }
+            if (c === '"' && q === "'") { out += '\\"'; continue; }                 // 'say "no"' -> "say \"no\""
+            if (isKey && (c === ':' || c === '\n')) { inS = false; out += '"' + (c === ':' ? ':' : '\n'); continue; }   // "fatigue: 5  -> "fatigue": 5
+            if (c === q) {
+                const j = nextSolid(k + 1), d = t0[j];
+                // a real closing quote is followed by , : } ] or the end; a quote then a new line then "..." is a missing comma
+                const after = d === ',' || d === ':' ? t0[nextSolid(j + 1)] : '';
+                const ends = j >= t0.length || '}]'.includes(d)
+                    || (d === ',' && (after === undefined || '"\'{[}]/'.includes(after)))           // "...", "next"  — not  "a "ghost", it walks"
+                    || (d === ':' && (after === undefined || /["'{\[\d\-tfn]/.test(after)))
+                    || (d === '"' && /[\r\n]/.test(t0.slice(k + 1, j)));
+                if (ends) { inS = false; out += '"'; }
+                else out += q === '"' ? '\\"' : "'";
+                continue;
+            }
+            if (c === '\n') { out += '\\n'; continue; }
+            if (c === '\r') continue;
+            if (c === '\t') { out += ' '; continue; }
+            out += c; continue;
+        }
+        if (c === '/' && t0[k + 1] === '/') { while (k < t0.length && t0[k] !== '\n') k++; out += '\n'; continue; }
+        if (c === '/' && t0[k + 1] === '*') { const e = t0.indexOf('*/', k + 2); k = e < 0 ? t0.length : e + 1; continue; }
+        if (c === '"' || c === "'") {
+            // "a" "b", } {, ] [, 5 "b" with no comma between them
+            const prev = out.replace(/\s+$/, '').slice(-1);
+            // a name in an object (not a value, not an item of a list): "fatigue: 5 lost its closing quote
+            q = c; isKey = stack[stack.length - 1] === '{' && prev !== ':';
+            if (prev && /["}\]\w]/.test(prev) && /\s$/.test(out)) out = out.replace(/\s+$/, '') + ',' + out.match(/\s+$/)[0];   // after a text, an object, a list, a number or true/false/null
+            inS = true; out += '"'; continue;
+        }
+        if (c === '}' || c === ']') stack.pop();
+        if (c === '{' || c === '[') {
+            stack.push(c);
+            const prev = out.replace(/\s+$/, '').slice(-1);
+            if (prev && '"}]'.includes(prev)) out = out.replace(/\s+$/, '') + ',' + (out.match(/\s+$/) || [''])[0];
+        }
+        out += c;
+    }
+    return out;
+}
 function parseJSON(raw) {
     if (!raw) return null;
     let s = raw.replace(/```json/gi, '').replace(/```/g, '').trim();
     const a = s.indexOf('{'), b = s.lastIndexOf('}');
     if (a >= 0 && b > a) s = s.slice(a, b + 1);
-    try { return JSON.parse(s); } catch (e) { return null; }
+    try { return JSON.parse(s); } catch (e) { /* tidy and try again */ }
+    try { return JSON.parse(s.replace(/,\s*([}\]])/g, '$1').replace(/[“”]/g, '"')); } catch (e) { /* the punctuation of a local model */ }
+    try { return JSON.parse(repairModelJson(s).replace(/,\s*([}\]])/g, '$1')); } catch (e) { return null; }
 }
 
 /* ---- EMBEDDINGS (optional vector RAG) ---- */
@@ -977,13 +1038,20 @@ async function summarizeChat(force) {
         const memText = (await callAI(memoryPrompt(prior), notes, 3500) || '').trim();
 
         const rawJson = await callAI(dossierPrompt(), notes);
+        const dossierFinish = lastFinish;
         if (!ownsChat(myChat)) { aiBusy = false; return; }   // never apply the old chat's memory to a new chat
         const parsed = parseJSON(rawJson);
         const obj = parsed || {};
         // The truncation warning used to check whether the RAW reply ends with "}" — but models often
         // wrap the JSON in ```-fences or add a trailing line, so it cried wolf after every perfectly
         // good summarize. Now it only fires when the reply genuinely failed to parse.
-        if (rawJson && !parsed && !/}\s*$/.test(rawJson.trim())) toastr.warning(t('t_sum_trunc'), '', { timeOut: 14000 });
+        // "Cut off" only when it really was: the server said the token limit ended it (or, when it does not say,
+        // the reply stops mid-way). A whole reply that is just broken JSON gets its own, honest message.
+        if (rawJson && !parsed) {
+            const cut = dossierFinish ? dossierFinish === 'length' : !/}\s*(```)?\s*$/.test(rawJson.trim());
+            console.warn('[RPG Diary] the records reply could not be read:', cut ? 'cut off by the token limit' : 'not valid JSON', '· finish:', dossierFinish || '?', '· length:', rawJson.length);
+            toastr.warning(t(cut ? 't_sum_trunc' : 't_sum_badjson'), '', { timeOut: 14000 });
+        }
         if (memText) obj.memory = memText;
 
         if (!coerceText(obj.memory) && !obj.events && !obj.npcs) { toastr.error(t('t_sum_err')); aiBusy = false; renderPanel(); return; }
