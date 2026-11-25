@@ -134,6 +134,7 @@ const I18N = {
         set_api: 'AI (OpenRouter) — used for summaries & entries', set_url: 'API URL', set_key: 'API key', set_model: 'Model', set_temp: 'Temperature',
         set_maxtok: "Max REPLY tokens", set_maxtok_note: "This limits what the AI WRITES (the memory + dossier it returns) — not the size of your chat. Your chat is read in parts, so a 300k-token chat is fine. Lower this only if your model rejects the request.",
         t_sum_many: 'This chat is long: summarizing it will make about {n} AI calls (it only happens once — later summaries read just the new messages). Continue?',
+        t_busy_wait: 'The model is busy with another answer — waiting for it to be free…',
         t_sum_badjson: "The memory is saved, but the model's reply with the records (events, people, places) could not be read — they were not updated this time. Summarize again, or try another model.",
         t_sum_trunc: "The AI's reply was cut off — raise 'Max reply tokens' in settings (or use a model with a bigger output limit), then summarize again.",
         set_inject_h: 'Hidden memory injection (invisible to you, seen by the AI)',
@@ -150,8 +151,8 @@ const I18N = {
         set_bookscale: 'Book size when opened from the Suite Menu, %', m_to_r: 'Turn the page ›', m_to_l: '‹ Back',
         set_output_lang: 'AI writes in:', lang_follow: 'Same as UI', lang_en: 'English', lang_ru: 'Russian',
         set_embed_h: 'Vector RAG (optional — needs an embeddings endpoint)', set_useembed: 'Use vector embeddings for retrieval (falls back to keyword RAG)',
-        set_embed_url_ph: 'blank = use the API URL above', set_embed_note: 'OpenRouter supports embeddings — leave URL/key blank to reuse the API above, and prefix the model with its provider (e.g. openai/text-embedding-3-small).',
-        embed_test: 'Test embeddings', embed_ok: 'Embeddings work — {model} ({dim} dimensions).', embed_fail: 'Embeddings failed: {err}'
+        set_embed_url_ph: 'blank = the Suite Hub\'s, else the API above', set_embed_note: 'OpenRouter supports embeddings — leave URL/key blank to reuse the API above, and prefix the model with its provider (e.g. openai/text-embedding-3-small).',
+        export_fail: 'Export failed.', embed_test: 'Test embeddings', embed_ok: 'Embeddings work — {model} ({dim} dimensions).', embed_fail: 'Embeddings failed: {err}'
     },
     ru: {
         btn_open: 'Дневник', close: 'Закрыть',
@@ -253,6 +254,7 @@ const I18N = {
         set_api: 'ИИ (OpenRouter) — для резюме и записей', set_url: 'API URL', set_key: 'API-ключ', set_model: 'Модель', set_temp: 'Температура',
         set_maxtok: 'Макс. токенов ОТВЕТА', set_maxtok_note: 'Ограничивает то, что ИИ ПИШЕТ (память и досье в ответе) — а не размер твоего чата. Чат читается по частям, так что даже 300k токенов не проблема. Снижай, только если модель отказывается принимать запрос.',
         t_sum_many: 'Чат длинный: суммирование сделает примерно {n} запросов к ИИ (это разово — дальше читаются только новые сообщения). Продолжить?',
+        t_busy_wait: 'Модель занята другим ответом — жду, когда освободится…',
         t_sum_badjson: 'Память сохранена, но ответ модели с записями (события, люди, места) не удалось прочитать — в этот раз они не обновились. Суммируй ещё раз или попробуй другую модель.',
         t_sum_trunc: 'Ответ ИИ оборвался — подними «Макс. токенов ответа» в настройках (или возьми модель с большим лимитом вывода) и суммируй заново.',
         set_inject_h: 'Скрытая инъекция памяти (тебе не видна, ИИ видит)',
@@ -269,8 +271,8 @@ const I18N = {
         set_bookscale: 'Размер книги, открытой из меню, %', m_to_r: 'Перевернуть ›', m_to_l: '‹ Назад',
         set_output_lang: 'ИИ пишет на:', lang_follow: 'Как интерфейс', lang_en: 'Английском', lang_ru: 'Русском',
         set_embed_h: 'Векторный RAG (опционально — нужен эмбеддинг-эндпоинт)', set_useembed: 'Использовать векторные эмбеддинги для поиска (иначе — поиск по словам)',
-        set_embed_url_ph: 'пусто = взять URL API выше', set_embed_note: 'OpenRouter поддерживает эмбеддинги — оставь URL/ключ пустыми, чтобы взять API выше, и указывай модель с префиксом провайдера (например openai/text-embedding-3-small).',
-        embed_test: 'Проверить эмбеддинги', embed_ok: 'Эмбеддинги работают — {model} ({dim} измерений).', embed_fail: 'Эмбеддинги не работают: {err}'
+        set_embed_url_ph: 'пусто = из Хаба, иначе API выше', set_embed_note: 'OpenRouter поддерживает эмбеддинги — оставь URL/ключ пустыми, чтобы взять API выше, и указывай модель с префиксом провайдера (например openai/text-embedding-3-small).',
+        export_fail: 'Не удалось выгрузить.', embed_test: 'Проверить эмбеддинги', embed_ok: 'Эмбеддинги работают — {model} ({dim} измерений).', embed_fail: 'Эмбеддинги не работают: {err}'
     }
 };
 function t(key, vars) {
@@ -646,6 +648,11 @@ async function callAI(systemPrompt, userPrompt, maxTokens, temperature) {
     lastFinish = '';
     if (!apiKey()) throw new Error('no-key');
     const url = (apiUrl() || 'https://openrouter.ai/api/v1').replace(/\/$/, '') + '/chat/completions';
+    // (3.9.5) A local server (KoboldCpp and the like) writes one answer at a time; asked while it is still busy with
+    // the tavern's reply or another extension, it answers «503 busy» at once, and the summary was lost. Now a busy
+    // server is waited for: up to about three minutes for a local one, a few seconds for a remote one.
+    const busyWaits = isLocalEndpoint(url) ? [5, 10, 15, 20, 30, 40, 60] : [3, 6];
+    let busy = 0;
     for (let i = 0; i < 2; i++) {
         try {
             const res = await fetch(url, {
@@ -659,6 +666,10 @@ async function callAI(systemPrompt, userPrompt, maxTokens, temperature) {
                 })
             });
             if (res.status === 429 && i === 0) { await new Promise(r => setTimeout(r, 2000)); continue; }
+            if (res.status === 503 && busy < busyWaits.length) {
+                if (busy === 0) toastr.info(t('t_busy_wait'), '', { timeOut: 6000 });
+                await new Promise(r => setTimeout(r, busyWaits[busy++] * 1000)); i--; continue;
+            }
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const data = await res.json();
             lastFinish = String((data.choices && data.choices[0] && data.choices[0].finish_reason) || '');   // 'length' = cut off by the token limit
@@ -688,6 +699,7 @@ function repairModelJson(src) {
     let out = '', inS = false, q = '"', isKey = false, k = 0;
     const stack = [];   // the open { and [ around
     const nextSolid = j => { while (j < t0.length && /\s/.test(t0[j])) j++; return j; };
+    const bareKeyAt = j => /^[A-Za-zА-Яа-яЁё_][\wА-Яа-яЁё$-]*\s*:/.test(t0.slice(j, j + 80));   // title: — a name without quotes
     for (; k < t0.length; k++) {
         const c = t0[k];
         if (inS) {
@@ -699,7 +711,7 @@ function repairModelJson(src) {
                 // a real closing quote is followed by , : } ] or the end; a quote then a new line then "..." is a missing comma
                 const after = d === ',' || d === ':' ? t0[nextSolid(j + 1)] : '';
                 const ends = j >= t0.length || '}]'.includes(d)
-                    || (d === ',' && (after === undefined || '"\'{[}]/'.includes(after)))           // "...", "next"  — not  "a "ghost", it walks"
+                    || (d === ',' && (after === undefined || '"\'{[}]/'.includes(after) || bareKeyAt(nextSolid(j + 1))))           // "...", "next"  — not  "a "ghost", it walks"
                     || (d === ':' && (after === undefined || /["'{\[\d\-tfn]/.test(after)))
                     || (d === '"' && /[\r\n]/.test(t0.slice(k + 1, j)));
                 if (ends) { inS = false; out += '"'; }
@@ -712,6 +724,18 @@ function repairModelJson(src) {
             out += c; continue;
         }
         if (c === '/' && t0[k + 1] === '/') { while (k < t0.length && t0[k] !== '\n') k++; out += '\n'; continue; }
+        // (3.9.5) a bare word outside the quotes. Before «:» it is a name left unquoted — quoted. true/false/null
+        // and numbers stay. Anything else is a stray token a small quantized model let slip into the structure
+        // (` el ],` — `"…",Prime",`): dropped, with the lone quote and comma that came with it.
+        if (/[A-Za-zА-Яа-яЁё_]/.test(c)) {
+            let e = k; while (e < t0.length && /[\wА-Яа-яЁё$-]/.test(t0[e])) e++;
+            const word = t0.slice(k, e), j = nextSolid(e);
+            if (t0[j] === ':' && stack[stack.length - 1] === '{') { out += '"' + word + '"'; k = e - 1; continue; }
+            if (/^(true|false|null)$/.test(word) || (/^[eE]/.test(word) && /\d\.?$/.test(out))) { out += word; k = e - 1; continue; }
+            let m = e;
+            if (t0[m] === '"') { const n = nextSolid(m + 1); if (t0[n] === ',' || '}]'.includes(t0[n])) m = t0[n] === ',' ? n + 1 : m + 1; }
+            k = m - 1; continue;
+        }
         if (c === '/' && t0[k + 1] === '*') { const e = t0.indexOf('*/', k + 2); k = e < 0 ? t0.length : e + 1; continue; }
         if (c === '"' || c === "'") {
             // "a" "b", } {, ] [, 5 "b" with no comma between them
@@ -733,12 +757,37 @@ function repairModelJson(src) {
 }
 function parseJSON(raw) {
     if (!raw) return null;
-    let s = raw.replace(/```json/gi, '').replace(/```/g, '').trim();
+    // (3.9.4) A thinking model writes its thoughts first, and they hold braces of their own
+    // ("{events} first, then…"): cutting from the first «{» to the last «}» began inside the thoughts and
+    // the whole reply was lost. The thoughts go first; then every complete {…} in the reply is tried, and
+    // the one that carries the records wins; the old whole-cut stays as the last way.
+    let s = String(raw).replace(/<(think|thinking|reasoning)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, '')
+        .replace(/^[\s\S]*?<\/(think|thinking|reasoning)\s*>/i, '')
+        .replace(/```json/gi, '').replace(/```/g, '').trim();
+    const tryOne = (x) => {
+        try { return JSON.parse(x); } catch (e) { /* tidy and try again */ }
+        try { return JSON.parse(x.replace(/,\s*([}\]])/g, '$1').replace(/[“”]/g, '"')); } catch (e) { /* the punctuation of a local model */ }
+        try { return JSON.parse(repairModelJson(x).replace(/,\s*([}\]])/g, '$1')); } catch (e) { return null; }
+    };
+    const isObj = v => v && typeof v === 'object' && !Array.isArray(v);
+    const KEYS = ['events', 'npcs', 'entry', 'title', 'bond', 'locations', 'gifts', 'glossary', 'outdated', 'memory'];
+    const hits = v => isObj(v) ? KEYS.filter(k => k in v).length : 0;
+    // every top-level {…}, braces inside quoted text not counted
+    const objs = [];
+    for (let i = 0, depth = 0, start = -1, inS = false; i < s.length && objs.length < 12; i++) {
+        const c = s[i];
+        if (inS) { if (c === '\\') i++; else if (c === '"') inS = false; continue; }
+        if (c === '"') { if (depth > 0) inS = true; continue; }
+        if (c === '{') { if (depth === 0) start = i; depth++; }
+        else if (c === '}' && depth > 0) { depth--; if (depth === 0 && start >= 0) { objs.push(s.slice(start, i + 1)); start = -1; } }
+    }
+    let best = null, bestHits = 0;
+    for (const o of objs) { const v = tryOne(o); const h = hits(v); if (h > bestHits) { best = v; bestHits = h; } }
+    if (best) return best;
     const a = s.indexOf('{'), b = s.lastIndexOf('}');
     if (a >= 0 && b > a) s = s.slice(a, b + 1);
-    try { return JSON.parse(s); } catch (e) { /* tidy and try again */ }
-    try { return JSON.parse(s.replace(/,\s*([}\]])/g, '$1').replace(/[“”]/g, '"')); } catch (e) { /* the punctuation of a local model */ }
-    try { return JSON.parse(repairModelJson(s).replace(/,\s*([}\]])/g, '$1')); } catch (e) { return null; }
+    const v = tryOne(s);
+    return isObj(v) ? v : null;
 }
 
 /* ---- EMBEDDINGS (optional vector RAG) ---- */
@@ -771,7 +820,7 @@ function idb() {
     });
     return idbP;
 }
-function idbKey(k) { return (settings.embedModel || 'default') + '|' + k; }
+function idbKey(k) { return (embedEff().model || 'default') + '|' + k; }
 async function idbGetMany(keys) {
     const out = {};
     const db = await idb(); if (!db || !keys.length) return out;
@@ -791,7 +840,33 @@ async function idbPutMany(map) {
         ks.forEach(k => st.put({ v: new Float32Array(map[k]), ts: Date.now() }, idbKey(k)));
     } catch (e) { /* full or blocked: it is only a cache */ }
 }
-function embedConfigured() { return settings.useEmbeddings && !!(settings.embedUrl || apiUrl()) && !!(settings.embedKey || apiKey()); }
+/* (Suite Hub 1.3) Which embeddings: this panel's own address first; blank — the ones filled once in the Suite Hub
+   (its own address, key and model; its key goes only to its own address); none there — the API above, as before. */
+function hubEmbed() {
+    try {
+        const e = extension_settings.tavern_rpg_engine && extension_settings.tavern_rpg_engine.embed;
+        const url = e && String(e.url || '').trim();
+        if (!url) return null;
+        // the same address the hub's Test button used: /v1 is added when it has no version (as in the Codex)
+        return { url: normalizeBase(url), key: String(e.key || '').trim() || (isLocalEndpoint(url) ? 'local' : ''), model: String(e.model || '').trim() };
+    } catch (e) { return null; }
+}
+function embedEff() {
+    if (!String(settings.embedUrl || '').trim()) {
+        const h = hubEmbed();
+        if (h) return { url: h.url, key: h.key, model: h.model || settings.embedModel || 'openai/text-embedding-3-small' };
+    }
+    const own = String(settings.embedUrl || '').trim().replace(/\/+$/, '');
+    const mine = String(settings.embedKey || '').trim();
+    if (own && !mine) {
+        // (3.9.2) an address of its own with the key left blank: the chat key went there too — to a different
+        // server. Now it goes only to the same address (as in the Codex); a local server gets a placeholder.
+        const same = own.toLowerCase() === String(apiUrl() || '').trim().replace(/\/+$/, '').toLowerCase();
+        return { url: own, key: same ? String(apiKey() || '').trim() : (isLocalEndpoint(own) ? 'local' : ''), model: settings.embedModel || 'openai/text-embedding-3-small' };
+    }
+    return { url: (own || String(apiUrl() || '')).replace(/\/$/, ''), key: (mine || apiKey() || '').trim(), model: settings.embedModel || 'openai/text-embedding-3-small' };
+}
+function embedConfigured() { const e = embedEff(); return settings.useEmbeddings && !!e.url && !!e.key; }
 async function testEmbeddings() {
     const btn = document.getElementById('rpgd-embtest');
     if (btn) { btn.disabled = true; btn.textContent = '…'; }
@@ -799,20 +874,26 @@ async function testEmbeddings() {
         const v = await embed(['test']);
         const dim = (v && v[0] && v[0].length) || 0;
         if (!dim) throw new Error('empty');
-        toastr.success(t('embed_ok', { model: settings.embedModel, dim }));
+        toastr.success(t('embed_ok', { model: embedEff().model, dim }));
     } catch (e) {
         toastr.error(t('embed_fail', { err: escapeHtml(String(e.message || e)) }), '', { timeOut: 12000 });
     }
     if (btn) { btn.disabled = false; btn.textContent = t('embed_test'); }
 }
 async function embed(texts) {
-    const url = ((settings.embedUrl || apiUrl()) || '').replace(/\/$/, '') + '/embeddings';
-    const key = (settings.embedKey || apiKey() || '').trim();
+    const eff = embedEff();
+    const url = eff.url + '/embeddings';
+    const key = eff.key;
+    if (!key) throw new Error('no key for this address');
+    // (3.9.2) a request that never came back held «embedding in progress» for good, and memory search by meaning
+    // stopped refreshing until the page was reloaded: 60 seconds, as in the Codex
+    const ctl = new AbortController();
+    const bell = setTimeout(() => { try { ctl.abort(); } catch (e) { /* gone */ } }, 60000);
     const res = await fetch(url, {
-        method: 'POST',
+        method: 'POST', signal: ctl.signal,
         headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: settings.embedModel || 'openai/text-embedding-3-small', input: texts, encoding_format: 'float' })
-    });
+        body: JSON.stringify({ model: eff.model, input: texts, encoding_format: 'float' })
+    }).finally(() => clearTimeout(bell));
     if (!res.ok) {
         let detail = '';
         try { const j = await res.json(); detail = (j.error && (j.error.message || j.error)) || ''; } catch (_) { }
@@ -1050,6 +1131,7 @@ async function summarizeChat(force) {
         if (rawJson && !parsed) {
             const cut = dossierFinish ? dossierFinish === 'length' : !/}\s*(```)?\s*$/.test(rawJson.trim());
             console.warn('[RPG Diary] the records reply could not be read:', cut ? 'cut off by the token limit' : 'not valid JSON', '· finish:', dossierFinish || '?', '· length:', rawJson.length);
+            console.warn('[RPG Diary] the start of that reply (to see what the model sent):', rawJson.slice(0, 600));
             toastr.warning(t(cut ? 't_sum_trunc' : 't_sum_badjson'), '', { timeOut: 14000 });
         }
         if (memText) obj.memory = memText;
@@ -1061,6 +1143,8 @@ async function summarizeChat(force) {
         updateCarry();
         toastr.success(prior ? t('t_merged') : t('t_sum_done', { n: lines.length }));
     } catch (e) {
+        // (3.9.6) the reason was swallowed: only «failed» was ever seen. Now the console says what broke.
+        console.error('[RPG Diary] summarize failed:', e);
         toastr.error(t('t_sum_err'));
     }
     aiBusy = false;
@@ -1131,7 +1215,11 @@ function applySummary(obj, hadPrior, msgN) {
         }
         if (obj.bond.status) state.bond.status = mergeText(state.bond.status, String(obj.bond.status), 300);
     }
-    mergeEvents(obj.events); mergeNpcs(obj.npcs); mergeLocations(obj.locations); mergeGifts(obj.gifts); mergeGlossary(obj.glossary);
+    // (3.9.6) a list sent as one record ("events": {…}) used to be dropped whole: read as a list of one
+    const asList = v => Array.isArray(v) ? v : (v && typeof v === 'object') ? [v] : [];
+    mergeEvents(Array.isArray(obj.events) ? obj.events : typeof obj.events === 'string' ? [obj.events] : asList(obj.events));
+    mergeNpcs(asList(obj.npcs)); mergeLocations(asList(obj.locations)); mergeGifts(asList(obj.gifts)); mergeGlossary(asList(obj.glossary));
+    if (obj.outdated && !Array.isArray(obj.outdated)) obj.outdated = asList(obj.outdated);
     syncFromBonds();
     if (settings.outdatedFacts !== false) {
         const marked = markOutdated(obj.outdated);
@@ -1224,7 +1312,9 @@ function syncFromBonds() {
 }
 function mergeEvents(arr) {
     if (!Array.isArray(arr)) return;
-    for (const e of arr) {
+    for (let e of arr) {
+        // (3.9.6) an event sent as a bare sentence: it is the «what», and its start the title
+        if (typeof e === 'string') e = e.trim() ? { what: e.trim() } : null;
         if (!e || (!e.title && !e.what)) continue;
         const title = String(e.title || (e.what || '').slice(0, 40));
         const dup = state.events.find(x => norm(x.title) === norm(title));
@@ -1334,7 +1424,7 @@ Reconcile overlaps, keep every distinct fact, and CLARIFY vague references: if a
         saveToLibrary(t('merge_label') + ': ' + (getContext().name2 || ''));
         updateCarry();
         toastr.success(t('t_merged'));
-    } catch (e) { toastr.error(t('t_sum_err')); }
+    } catch (e) { console.error('[RPG Diary] failed:', e); toastr.error(t('t_sum_err')); }
     aiBusy = false; editing = null;
     saveState(); renderPanel(); buildInjection();
 }
@@ -1372,7 +1462,7 @@ async function generateEntry() {
         });
         ei = state.entries.length - 1;
         toastr.success(t('t_write_done'));
-    } catch (e) { toastr.error(t('t_write_err')); }
+    } catch (e) { console.error('[RPG Diary] writing failed:', e); toastr.error(t('t_write_err')); }
     aiBusy = false;
     saveState(); renderPanel(); buildInjection();
 }
@@ -1415,7 +1505,7 @@ If there is nothing wrong, return {"conflicts":[]}. Write in ${outLang()}.`;
         renderPanel();
         toastr.warning(t('chk_found', { n: list.length }));
         return;
-    } catch (e) { toastr.error(t('t_sum_err')); }
+    } catch (e) { console.error('[RPG Diary] failed:', e); toastr.error(t('t_sum_err')); }
     aiBusy = false; renderPanel();
 }
 function alertsForm() {
@@ -2263,7 +2353,7 @@ async function compactMemory() {
         state.pendingInfo = { kind: 'compact', from, to, lost, fewer, broken, restored, small: to > from * 0.85, typos: fixedTypos.slice(0, 12), ts: Date.now() };
         saveState();
         toastr.success(t('mem_compact_ready'));
-    } catch (e) { toastr.error(t('t_sum_err')); }
+    } catch (e) { console.error('[RPG Diary] failed:', e); toastr.error(t('t_sum_err')); }
     aiBusy = false; renderPanel();
 }
 function toggleMemLock() {
@@ -3212,7 +3302,7 @@ function exportDiary() {
         a.download = 'diary-' + String(chatKey() || 'chat').replace(/[^\w.-]/g, '_') + '.json';
         document.body.appendChild(a); a.click(); a.remove();
         setTimeout(() => URL.revokeObjectURL(url), 3000);
-    } catch (e) { toastr.error('Export failed'); }
+    } catch (e) { toastr.error(t('export_fail')); }
 }
 function exportAll() {
     const payload = { _type: 'rpg-diary-all', version: 2, exported: new Date().toISOString(), chatStates: settings.chatStates || {}, library: settings.summaryLibrary || [] };
@@ -3222,7 +3312,7 @@ function exportAll() {
         const a = document.createElement('a'); a.href = url; a.download = 'diary-ALL-' + new Date().toISOString().slice(0, 10) + '.json';
         document.body.appendChild(a); a.click(); a.remove();
         setTimeout(() => URL.revokeObjectURL(url), 3000);
-    } catch (e) { toastr.error('Export failed'); }
+    } catch (e) { toastr.error(t('export_fail')); }
 }
 function importAll() {
     const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'application/json,.json';
